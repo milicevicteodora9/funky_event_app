@@ -6,5 +6,17 @@
     <fragment
         android:id="@+id/eventsFragment"
         android:name="com.example.funkyeventapp.fragments.EventsFragment"
-        android:label="@string/events" />
+        android:label="@string/events">
+        <action
+            android:id="@+id/action_eventsFragment_to_eventDetailsFragment"
+            app:destination="@id/eventDetailsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/eventDetailsFragment"
+        android:name="com.example.funkyeventapp.fragments.EventDetailsFragment"
+        android:label="@string/event_details">
+        <argument
+            android:name="eventId"
+            app:argType="string" />
+    </fragment>
 </navigation>

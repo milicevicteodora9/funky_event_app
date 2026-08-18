@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/funky_background"
+    android:clipToPadding="false"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="28dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/funky_surface"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="10dp">
+            <ImageButton
+                android:id="@+id/buttonBack"
+                style="@style/HeaderIconButton"
+                android:contentDescription="@string/back"
+                android:src="@drawable/ic_back" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/textDetailName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textColor="@color/funky_text"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="Addiko Banka - Branding" />
+                <TextView
+                    android:id="@+id/textDetailDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/funky_text_secondary"
+                    android:textSize="12sp"
+                    tools:text="20 Aug 2026 – 27 Aug 2026" />
+                <TextView
+                    android:id="@+id/textDetailLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/funky_text_secondary"
+                    android:textSize="12sp"
+                    tools:text="Beograd" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/textDetailType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_logo_placeholder"
+                android:paddingHorizontal="11dp"
+                android:paddingVertical="6dp"
+                android:textColor="@color/funky_text"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="Campaign" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="@color/funky_surface"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+            <TextView
+                android:id="@+id/textDetailStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/funky_mint"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="CURRENT" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonEditEvent"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:text="@string/edit"
+                android:textColor="@color/funky_text_secondary"
+                android:textSize="12sp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="6dp"
+                app:icon="@drawable/ic_edit"
+                app:iconPadding="3dp"
+                app:iconSize="18dp"
+                app:iconTint="@color/funky_text_secondary" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonCompleteEvent"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:text="@string/complete"
+                android:textColor="@color/funky_text_secondary"
+                android:textSize="12sp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="6dp"
+                app:icon="@drawable/ic_check"
+                app:iconPadding="3dp"
+                app:iconSize="18dp"
+                app:iconTint="@color/funky_mint" />
+        </LinearLayout>
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/funky_border" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/funky_surface"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/funky_border"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/textTeamTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:textColor="@color/funky_text_secondary"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        tools:text="TEAM (3)" />
+                    <ImageButton
+                        android:id="@+id/buttonAddTeamUser"
+                        style="@style/HeaderIconButton"
+                        android:contentDescription="@string/add_team_user"
+                        android:src="@drawable/ic_add_person" />
+                </LinearLayout>
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupTeam"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="6dp"
+                    app:singleLine="false" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="10dp"
+            app:cardBackgroundColor="@color/funky_surface"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/funky_border"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:text="@string/client_billing"
+                        android:textColor="@color/funky_text_secondary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                    <ImageButton
+                        android:id="@+id/buttonEditBilling"
+                        style="@style/HeaderIconButton"
+                        android:contentDescription="@string/edit_billing"
+                        android:src="@drawable/ic_edit" />
+                </LinearLayout>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="@string/client_label" android:textColor="@color/funky_text_secondary" android:textSize="10sp" android:textStyle="bold" />
+                <TextView android:id="@+id/textClientNameDetail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:textColor="@color/funky_text" android:textSize="15sp" android:textStyle="bold" tools:text="Addiko Bank" />
+                <TextView android:id="@+id/textClientContact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:textColor="@color/funky_text_secondary" android:textSize="12sp" tools:text="Neda Bogunović · neda@addiko.com" />
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginVertical="14dp" android:background="@color/funky_border" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/billing_entity_label" android:textColor="@color/funky_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+                <TextView android:id="@+id/textBillingEntity" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/funky_text" android:textSize="13sp" tools:text="Addiko Bank a.d. Beograd" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="@string/po_number_label" android:textColor="@color/funky_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+                <TextView android:id="@+id/textPoNumber" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/funky_text" android:textSize="13sp" tools:text="PO-ADD-2026-081" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="10dp"
+            app:cardBackgroundColor="@color/funky_surface"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/funky_border"
+            app:strokeWidth="1dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/payment_terms_label" android:textColor="@color/funky_text_secondary" android:textSize="11sp" android:textStyle="bold" />
+                <TextView android:id="@+id/textPaymentTerms" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:textColor="@color/funky_text" android:textSize="12sp" tools:text="50% avansno, 50% nakon događaja" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/budget_overview"
+            android:textColor="@color/funky_text_secondary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="6dp"
+            app:cardBackgroundColor="@color/funky_surface"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/funky_border"
+            app:strokeWidth="1dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                    <TextView android:id="@+id/textExternalTotal" style="@style/BudgetSummaryValue" android:layout_weight="1" tools:text="300,00 €" />
+                    <TextView android:id="@+id/textInternalTotal" style="@style/BudgetSummaryValue" android:layout_weight="1" tools:text="150,00 €" />
+                    <TextView android:id="@+id/textActualTotal" style="@style/BudgetSummaryValue" android:layout_weight="1" tools:text="0,00 €" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:orientation="horizontal">
+                    <TextView android:id="@+id/textEstimatedProfit" style="@style/BudgetProfitValue" android:layout_weight="1" tools:text="EST. PROFIT  150,00 €" />
+                    <TextView android:id="@+id/textActualProfit" style="@style/BudgetProfitValue" android:layout_weight="1" tools:text="ACTUAL PROFIT  300,00 €" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkIncludeVat" android:layout_width="wrap_content" android:layout_height="34dp" android:text="@string/include_vat" android:textColor="@color/funky_text_secondary" android:textSize="12sp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/discount_short" android:textColor="@color/funky_text_secondary" android:textSize="12sp" />
+                    <EditText android:id="@+id/inputDiscount" android:layout_width="52dp" android:layout_height="32dp" android:layout_marginStart="5dp" android:background="@drawable/bg_logo_placeholder" android:gravity="center" android:inputType="numberDecimal" android:maxLines="1" android:padding="3dp" android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_logo_placeholder"
+            android:orientation="horizontal"
+            android:padding="3dp">
+            <com.google.android.material.button.MaterialButton android:id="@+id/buttonBudgetExternal" style="@style/BudgetTabButton" android:layout_weight="1" android:text="@string/external" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/buttonBudgetInternal" style="@style/BudgetTabButton" android:layout_weight="1" android:text="@string/internal" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/buttonBudgetActual" style="@style/BudgetTabButton" android:layout_weight="1" android:text="@string/actual" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/containerBudgetItems"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingTop="10dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonCopyAllInternal"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/copy_all_internal"
+            android:textAllCaps="false"
+            android:textColor="@color/funky_text"
+            android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonAddBudgetItem"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/add_item"
+            android:textAllCaps="false"
+            android:textColor="@color/funky_text"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

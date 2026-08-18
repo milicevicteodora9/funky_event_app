@@ -10,16 +10,22 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.funkyeventapp.R;
+import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
+import com.example.funkyeventapp.repositories.MockDataRepository;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
     public interface OnEventClickListener { void onEventClick(Event event); }
     private final List<Event> events = new ArrayList<>();
     private final OnEventClickListener listener;
+    private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
 
     public EventAdapter(OnEventClickListener listener) { this.listener = listener; }
 
@@ -52,21 +58,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             status = itemView.findViewById(R.id.textEventStatus);
         }
         void bind(Event event) {
+            Client eventClient = repository.getClientById(event.getClientId());
+            String clientName = eventClient == null ? "Unknown client" : eventClient.getName();
             name.setText(event.getName());
             type.setText(event.getType().getLabel());
-            date.setText(event.getDateDisplay());
-            location.setText(event.getLocation());
-            client.setText(event.getClientName());
-            status.setVisibility(event.getStatus() == EventStatus.COMPLETED ? View.VISIBLE : View.GONE);
-            if (event.getLogoResource() != 0) {
-                logo.setImageResource(event.getLogoResource());
-                logo.setVisibility(View.VISIBLE);
-                logoInitial.setVisibility(View.GONE);
-            } else {
-                logo.setVisibility(View.GONE);
-                logoInitial.setVisibility(View.VISIBLE);
-                logoInitial.setText(event.getClientName().substring(0, 1));
+            String dateText = event.getStartDate().format(dateFormatter);
+            if (event.getEndDate() != null && !event.getEndDate().equals(event.getStartDate())) {
+                dateText += " – " + event.getEndDate().format(dateFormatter);
             }
+            date.setText(dateText);
+            location.setText(event.getLocation());
+            client.setText(clientName);
+            status.setVisibility(event.isCompleted() || event.getStatus() == EventStatus.COMPLETED ? View.VISIBLE : View.GONE);
+            logo.setVisibility(View.GONE);
+            logoInitial.setVisibility(View.VISIBLE);
+            logoInitial.setText(clientName.substring(0, 1));
             itemView.setOnClickListener(v -> listener.onEventClick(event));
         }
     }
