@@ -72,4 +72,8 @@
     <string name="total_actual">ACTUAL\n%1$s</string>
     <string name="estimated_profit_value">EST. PROFIT  %1$s</string>
     <string name="actual_profit_value">ACTUAL PROFIT  %1$s</string>
+    <string name="pdf_quote">PDF Quote</string>
+    <string name="pdf_quote_generated">PDF Quote generated</string>
+    <string name="pdf_quote_error">PDF Quote could not be generated</string>
+    <string name="share_pdf_quote">Share PDF Quote</string>
 </resources>

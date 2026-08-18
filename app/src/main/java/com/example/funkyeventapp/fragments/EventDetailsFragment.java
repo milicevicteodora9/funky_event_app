@@ -35,6 +35,7 @@ import com.example.funkyeventapp.models.EventAssignment;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.services.PdfService;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.checkbox.MaterialCheckBox;
@@ -43,6 +44,8 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.math.BigDecimal;
+import java.io.File;
+import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -52,6 +55,7 @@ import java.util.Locale;
 
 public class EventDetailsFragment extends Fragment {
     private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final PdfService pdfService = new PdfService();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
     private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private Event event;
@@ -131,6 +135,7 @@ public class EventDetailsFragment extends Fragment {
         view.findViewById(R.id.buttonEditEvent).setOnClickListener(v -> showToast(R.string.edit_event_later));
         view.findViewById(R.id.buttonEditBilling).setOnClickListener(v -> showToast(R.string.edit_billing_later));
         view.findViewById(R.id.buttonCompleteEvent).setOnClickListener(v -> toggleCompleted());
+        view.findViewById(R.id.buttonPdfQuote).setOnClickListener(v -> generateAndShareQuote());
         view.findViewById(R.id.buttonAddTeamUser).setOnClickListener(v -> showAddTeamDialog());
         externalTab.setOnClickListener(v -> selectBudget(BudgetType.EXTERNAL));
         internalTab.setOnClickListener(v -> selectBudget(BudgetType.INTERNAL));
@@ -346,6 +351,16 @@ public class EventDetailsFragment extends Fragment {
                 .setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.delete, (d, w) -> {
                     repository.deleteBudgetItem(item.getId()); renderBudget();
                 }).show();
+    }
+
+    private void generateAndShareQuote() {
+        try {
+            File pdfFile = pdfService.generateQuote(requireContext(), event);
+            Toast.makeText(requireContext(), R.string.pdf_quote_generated, Toast.LENGTH_SHORT).show();
+            pdfService.shareQuote(requireContext(), pdfFile);
+        } catch (IOException | RuntimeException error) {
+            Toast.makeText(requireContext(), R.string.pdf_quote_error, Toast.LENGTH_LONG).show();
+        }
     }
 
     private EditText field(int hint, boolean numeric) {

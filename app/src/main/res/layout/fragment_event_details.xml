@@ -315,5 +315,26 @@
             android:textAllCaps="false"
             android:textColor="@color/funky_text"
             android:textSize="12sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonPdfQuote"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_gravity="end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="12dp"
+            android:backgroundTint="@color/funky_mint"
+            android:minWidth="0dp"
+            android:paddingHorizontal="14dp"
+            android:text="@string/pdf_quote"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            app:cornerRadius="13dp"
+            app:icon="@drawable/ic_pdf"
+            app:iconPadding="5dp"
+            app:iconSize="18dp"
+            app:iconTint="@color/white" />
     </LinearLayout>
 </ScrollView>
