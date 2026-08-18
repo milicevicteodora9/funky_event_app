@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">Funky Event App</string>
+    <string name="user_name">Teodora Milićević</string>
+    <string name="user_role">ADMIN</string>
+    <string name="events">EVENTS</string>
+    <string name="clients">CLIENTS</string>
+    <string name="team">TEAM</string>
+    <string name="current_events">Current (%1$d)</string>
+    <string name="past_events">Past (%1$d)</string>
+    <string name="cashbox">Cashbox</string>
+    <string name="team_users">Team users</string>
+    <string name="user_management">User management</string>
+    <string name="logout">Logout</string>
+    <string name="brand_logo">Funky Business logo</string>
+    <string name="client_logo">Client logo</string>
+    <string name="event_clicked">%1$s</string>
+    <string name="coming_later">%1$s funkcionalnost dolazi u sledećem koraku</string>
 </resources>

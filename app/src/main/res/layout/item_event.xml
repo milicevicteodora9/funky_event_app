@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="14dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/funky_surface"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/funky_border"
+    app:strokeWidth="1dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="154dp"
+        android:padding="16dp">
+
+        <FrameLayout
+            android:id="@+id/logoContainer"
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:background="@drawable/bg_logo_placeholder"
+            android:padding="8dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+            <ImageView
+                android:id="@+id/imageClientLogo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/client_logo"
+                android:scaleType="centerInside" />
+            <TextView
+                android:id="@+id/textLogoInitial"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:textColor="@color/funky_pink"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                tools:text="A" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/textEventType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_logo_placeholder"
+            android:paddingHorizontal="11dp"
+            android:paddingVertical="6dp"
+            android:textColor="@color/funky_text"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Event" />
+
+        <TextView
+            android:id="@+id/textEventName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/funky_text"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/textEventType"
+            app:layout_constraintStart_toEndOf="@id/logoContainer"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Addiko Banka - Branding" />
+
+        <ImageView
+            android:id="@+id/iconDate"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="12dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_calendar"
+            app:layout_constraintStart_toEndOf="@id/logoContainer"
+            app:layout_constraintTop_toBottomOf="@id/textEventName" />
+        <TextView
+            android:id="@+id/textEventDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/funky_text_secondary"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@id/iconLocation"
+            app:layout_constraintStart_toEndOf="@id/iconDate"
+            app:layout_constraintTop_toTopOf="@id/iconDate"
+            tools:text="20 Aug 2026 – 27 Aug 2026" />
+        <ImageView
+            android:id="@+id/iconLocation"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_location"
+            app:layout_constraintEnd_toStartOf="@id/textEventLocation"
+            app:layout_constraintTop_toTopOf="@id/iconDate" />
+        <TextView
+            android:id="@+id/textEventLocation"
+            android:layout_width="90dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/funky_text_secondary"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/iconLocation"
+            app:layout_constraintTop_toTopOf="@id/iconDate"
+            tools:text="Beograd" />
+
+        <TextView
+            android:id="@+id/textClientName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="14dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/funky_text_secondary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@id/textEventStatus"
+            app:layout_constraintStart_toEndOf="@id/logoContainer"
+            app:layout_constraintTop_toBottomOf="@id/iconDate"
+            tools:text="Addiko Banka" />
+        <TextView
+            android:id="@+id/textEventStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/funky_completed"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="5dp"
+            android:text="Completed"
+            android:textColor="@color/funky_completed_text"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/textClientName"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/textClientName"
+            tools:visibility="visible" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

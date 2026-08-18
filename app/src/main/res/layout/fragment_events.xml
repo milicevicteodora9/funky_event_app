@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/funky_background"
+    android:orientation="vertical"
+    android:paddingTop="12dp"
+    tools:context=".fragments.EventsFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="8dp">
+
+        <ImageView
+            android:id="@+id/imageFunkyLogo"
+            android:layout_width="76dp"
+            android:layout_height="44dp"
+            android:contentDescription="@string/brand_logo"
+            android:scaleType="centerInside" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/user_name"
+                android:textColor="@color/funky_text"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.12"
+                android:text="@string/user_role"
+                android:textColor="@color/funky_text_secondary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <ImageButton android:id="@+id/buttonCashbox" style="@style/HeaderIconButton" android:contentDescription="@string/cashbox" android:src="@drawable/ic_cashbox" />
+        <ImageButton android:id="@+id/buttonUsers" style="@style/HeaderIconButton" android:contentDescription="@string/team_users" android:src="@drawable/ic_users" />
+        <ImageButton android:id="@+id/buttonAdmin" style="@style/HeaderIconButton" android:contentDescription="@string/user_management" android:src="@drawable/ic_admin" />
+        <ImageButton android:id="@+id/buttonLogout" style="@style/HeaderIconButton" android:contentDescription="@string/logout" android:src="@drawable/ic_logout" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="4dp">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonEvents"
+            style="@style/MainNavButton"
+            android:layout_weight="1"
+            android:backgroundTint="@color/funky_green"
+            android:text="@string/events" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonClients"
+            style="@style/MainNavButton"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/funky_pink"
+            android:text="@string/clients" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonTeam"
+            style="@style/MainNavButton"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/funky_purple"
+            android:text="@string/team" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:layout_marginTop="8dp"
+        android:background="@color/funky_surface"
+        android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonCurrent"
+            style="@style/EventFilterButton"
+            android:layout_weight="1"
+            android:textColor="@color/funky_mint"
+            app:strokeColor="@color/funky_mint"
+            app:strokeWidth="3dp"
+            tools:text="Current (3)" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonPast"
+            style="@style/EventFilterButton"
+            android:layout_weight="1"
+            tools:text="Past (2)" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerEvents"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="20dp"
+        tools:listitem="@layout/item_event" />
+</LinearLayout>

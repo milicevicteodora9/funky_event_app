@@ -2,4 +2,16 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="funky_background">#FFFDFC</color>
+    <color name="funky_surface">#FFFFFFFF</color>
+    <color name="funky_text">#20212A</color>
+    <color name="funky_text_secondary">#737987</color>
+    <color name="funky_green">#80BE18</color>
+    <color name="funky_mint">#47CBA6</color>
+    <color name="funky_pink">#E66D9B</color>
+    <color name="funky_purple">#AB77D8</color>
+    <color name="funky_border">#E7E5E2</color>
+    <color name="funky_badge">#F1F0ED</color>
+    <color name="funky_completed">#DFF5ED</color>
+    <color name="funky_completed_text">#25856C</color>
 </resources>
