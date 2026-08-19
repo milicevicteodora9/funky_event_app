@@ -111,5 +111,18 @@
     <string name="clients_total_actual">↗  TOTAL ACTUAL</string>
     <string name="clients_actual_profit">↗  ACTUAL PROFIT</string>
     <string name="actual_profit_formula">External − actual · all events</string>
+    <string name="my_cashbox">My Cashbox</string>
+    <string name="cashbox_owner">%1$s · Balance in %2$s</string>
+    <string name="cashbox_not_found">Cashbox nije pronađen</string>
+    <string name="received_value">RECEIVED\n%1$s EUR</string>
+    <string name="spent_value">SPENT\n%1$s EUR</string>
+    <string name="balance_value">BALANCE\n%1$s EUR</string>
+    <string name="all_entries">All entries (%1$d)</string>
+    <string name="general_expense">General expense</string>
+    <string name="add_entry">＋  Add entry</string>
+    <string name="pdf_receipt">▧  PDF receipt</string>
+    <string name="take_photo">▣  Take photo</string>
+    <string name="from_gallery">▧  From gallery</string>
+    <string name="exchange_reference">1 EUR = 117.20 RSD · 3.97 AED</string>
     <string name="all_event_budgets">All event budgets</string>
 </resources>

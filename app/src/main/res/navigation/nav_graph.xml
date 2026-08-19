@@ -13,6 +13,7 @@
         <action
             android:id="@+id/action_eventsFragment_to_clientsFragment"
             app:destination="@id/clientsFragment" />
+        <action android:id="@+id/action_eventsFragment_to_cashboxFragment" app:destination="@id/cashboxFragment" />
     </fragment>
     <fragment
         android:id="@+id/eventDetailsFragment"
@@ -29,6 +30,7 @@
         <action
             android:id="@+id/action_clientsFragment_to_clientDetailsFragment"
             app:destination="@id/clientDetailsFragment" />
+        <action android:id="@+id/action_clientsFragment_to_cashboxFragment" app:destination="@id/cashboxFragment" />
     </fragment>
     <fragment
         android:id="@+id/clientDetailsFragment"
@@ -39,4 +41,5 @@
             android:id="@+id/action_clientDetailsFragment_to_eventDetailsFragment"
             app:destination="@id/eventDetailsFragment" />
     </fragment>
+    <fragment android:id="@+id/cashboxFragment" android:name="com.example.funkyeventapp.fragments.CashboxFragment" android:label="@string/cashbox" />
 </navigation>

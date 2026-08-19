@@ -14,4 +14,5 @@
     <color name="funky_badge">#F1F0ED</color>
     <color name="funky_completed">#DFF5ED</color>
     <color name="funky_completed_text">#25856C</color>
+    <color name="funky_expense">#D9363E</color>
 </resources>

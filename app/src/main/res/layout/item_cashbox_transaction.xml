@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/funky_surface" app:cardCornerRadius="13dp" app:cardElevation="0dp"
+    app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="94dp"
+        android:orientation="horizontal" android:paddingStart="12dp" android:paddingTop="10dp" android:paddingEnd="6dp" android:paddingBottom="10dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/textTransactionAmount" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textColor="@color/funky_expense" android:textSize="16sp" android:textStyle="bold" tools:text="↘  -2.000 RSD   ≈ 17,06 EUR" />
+            <TextView android:id="@+id/textTransactionName" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="5dp" android:ellipsize="end" android:maxLines="1" android:textColor="@color/funky_text_secondary"
+                android:textSize="13sp" android:textStyle="bold" tools:text="Taxi · Kristina taxi" />
+            <TextView android:id="@+id/textTransactionDate" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" android:textColor="@color/funky_text_secondary" android:textSize="12sp" tools:text="17 Aug 2026" />
+            <TextView android:id="@+id/textTransactionPurpose" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="3dp" android:ellipsize="end" android:maxLines="1" android:textColor="@color/funky_mint"
+                android:textSize="12sp" android:textStyle="bold" tools:text="↗ Funky Summer Activation" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="36dp" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+            <ImageButton android:id="@+id/buttonEditTransaction" style="@style/HeaderIconButton" android:contentDescription="@string/edit" android:src="@drawable/ic_edit" />
+            <ImageButton android:id="@+id/buttonDeleteTransaction" style="@style/HeaderIconButton" android:contentDescription="@string/delete" android:src="@drawable/ic_delete" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

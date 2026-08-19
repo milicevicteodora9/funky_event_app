@@ -14,6 +14,11 @@ import com.example.funkyeventapp.models.Invoice;
 import com.example.funkyeventapp.models.InvoiceStatus;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.models.UserRole;
+import com.example.funkyeventapp.models.Cashbox;
+import com.example.funkyeventapp.models.CashboxTransaction;
+import com.example.funkyeventapp.models.Currency;
+import com.example.funkyeventapp.models.ExpensePurpose;
+import com.example.funkyeventapp.models.TransactionType;
 
 import java.time.LocalDate;
 import java.math.BigDecimal;
@@ -31,6 +36,8 @@ public class MockDataRepository {
     private final List<BudgetCategory> budgetCategories = new ArrayList<>();
     private final List<BudgetItem> budgetItems = new ArrayList<>();
     private final List<Invoice> invoices = new ArrayList<>();
+    private final List<Cashbox> cashboxes = new ArrayList<>();
+    private final List<CashboxTransaction> cashboxTransactions = new ArrayList<>();
     private long mockIdCounter = 1000;
 
     private MockDataRepository() {
@@ -40,6 +47,7 @@ public class MockDataRepository {
         seedAssignments();
         seedBudgets();
         seedInvoices();
+        seedCashbox();
     }
 
     public static MockDataRepository getInstance() { return INSTANCE; }
@@ -135,6 +143,48 @@ public class MockDataRepository {
                             InvoiceStatus status, String notes) {
         return new Invoice(id, eventId, clientId, number, LocalDate.parse(issueDate),
                 LocalDate.parse(dueDate), new BigDecimal(amount), currency, status, "", notes);
+    }
+
+    private void seedCashbox() {
+        cashboxes.add(new Cashbox("cashbox_teodora", "user_teodora", Currency.EUR));
+        cashboxTransactions.add(tx("ct_1", "Cash received", "Project advance", "20000", Currency.RSD, "117.20", "170.65", "2026-08-12", TransactionType.INCOME, ExpensePurpose.GENERAL, null));
+        cashboxTransactions.add(tx("ct_2", "Putarine", "Put do Niša", "1279.96", Currency.RSD, "117.20", "10.92", "2026-08-18", TransactionType.EXPENSE, ExpensePurpose.EVENT, "4"));
+        cashboxTransactions.add(tx("ct_3", "Taxi", "Kristina taxi", "2000", Currency.RSD, "117.20", "17.06", "2026-08-17", TransactionType.EXPENSE, ExpensePurpose.EVENT, "3"));
+        cashboxTransactions.add(tx("ct_4", "Gorivo", "Dostava opreme", "6000", Currency.RSD, "117.20", "51.19", "2026-08-14", TransactionType.EXPENSE, ExpensePurpose.GENERAL, null));
+        cashboxTransactions.add(tx("ct_5", "Smeštaj", "Tim na terenu", "145", Currency.EUR, "1", "145", "2026-08-13", TransactionType.EXPENSE, ExpensePurpose.EVENT, "1"));
+        cashboxTransactions.add(tx("ct_6", "Ručak", "Ručak za produkciju", "4200", Currency.RSD, "117.20", "35.84", "2026-08-12", TransactionType.EXPENSE, ExpensePurpose.EVENT, "2"));
+    }
+
+    private CashboxTransaction tx(String id, String name, String description, String amount, Currency currency,
+            String exchangeRate, String amountInEur, String date, TransactionType type, ExpensePurpose purpose, String eventId) {
+        return new CashboxTransaction(id, "cashbox_teodora", name, description, new BigDecimal(amount), currency,
+                new BigDecimal(exchangeRate), new BigDecimal(amountInEur), LocalDate.parse(date), type, purpose, eventId, null);
+    }
+
+    public Cashbox getCashboxForUser(String userId) {
+        for (Cashbox cashbox : cashboxes) if (cashbox.getUserId().equals(userId)) return cashbox;
+        return null;
+    }
+
+    public List<CashboxTransaction> getCashboxTransactions(String cashboxId) {
+        List<CashboxTransaction> result = new ArrayList<>();
+        for (CashboxTransaction transaction : cashboxTransactions)
+            if (transaction.getCashboxId().equals(cashboxId)) result.add(transaction);
+        result.sort((first, second) -> second.getDate().compareTo(first.getDate()));
+        return result;
+    }
+
+    public BigDecimal getCashboxTotal(String cashboxId, TransactionType type) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (CashboxTransaction transaction : cashboxTransactions)
+            if (transaction.getCashboxId().equals(cashboxId) && transaction.getTransactionType() == type)
+                total = total.add(transaction.getAmountInEur());
+        return total;
+    }
+
+    public BigDecimal getCashboxBalance(String cashboxId) {
+        return getCashboxTotal(cashboxId, TransactionType.INCOME)
+                .subtract(getCashboxTotal(cashboxId, TransactionType.EXPENSE));
     }
 
     public List<Client> getClients() { return new ArrayList<>(clients); }

@@ -60,8 +60,10 @@ public class EventsFragment extends Fragment {
 
         view.findViewById(R.id.buttonClients).setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_eventsFragment_to_clientsFragment));
+        view.findViewById(R.id.buttonCashbox).setOnClickListener(v ->
+                Navigation.findNavController(v).navigate(R.id.action_eventsFragment_to_cashboxFragment));
 
-        int[] informationalViews = {R.id.buttonTeam, R.id.buttonCashbox,
+        int[] informationalViews = {R.id.buttonTeam,
                 R.id.buttonUsers, R.id.buttonAdmin, R.id.buttonLogout, R.id.buttonAddEvent};
         for (int id : informationalViews) view.findViewById(id).setOnClickListener(this::showComingLater);
         showEvents(EventStatus.CURRENT);

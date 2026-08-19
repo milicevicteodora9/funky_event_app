@@ -54,8 +54,10 @@ public class ClientsFragment extends Fragment {
         view.findViewById(R.id.buttonAddClient).setOnClickListener(v ->
                 Toast.makeText(requireContext(), R.string.add_client_coming, Toast.LENGTH_SHORT).show());
         view.findViewById(R.id.buttonEvents).setOnClickListener(this::returnToEvents);
+        view.findViewById(R.id.buttonCashbox).setOnClickListener(v ->
+                Navigation.findNavController(v).navigate(R.id.action_clientsFragment_to_cashboxFragment));
         view.findViewById(R.id.buttonTeam).setOnClickListener(this::showComingLater);
-        int[] informationalViews = {R.id.buttonCashbox, R.id.buttonUsers, R.id.buttonAdmin, R.id.buttonLogout};
+        int[] informationalViews = {R.id.buttonUsers, R.id.buttonAdmin, R.id.buttonLogout};
         for (int id : informationalViews) view.findViewById(id).setOnClickListener(this::showComingLater);
     }
 
