@@ -10,6 +10,9 @@
         <action
             android:id="@+id/action_eventsFragment_to_eventDetailsFragment"
             app:destination="@id/eventDetailsFragment" />
+        <action
+            android:id="@+id/action_eventsFragment_to_clientsFragment"
+            app:destination="@id/clientsFragment" />
     </fragment>
     <fragment
         android:id="@+id/eventDetailsFragment"
@@ -19,4 +22,8 @@
             android:name="eventId"
             app:argType="string" />
     </fragment>
+    <fragment
+        android:id="@+id/clientsFragment"
+        android:name="com.example.funkyeventapp.fragments.ClientsFragment"
+        android:label="@string/clients" />
 </navigation>

@@ -76,4 +76,8 @@
     <string name="pdf_quote_generated">PDF Quote generated</string>
     <string name="pdf_quote_error">PDF Quote could not be generated</string>
     <string name="share_pdf_quote">Share PDF Quote</string>
+    <string name="clients_count">Clients (%1$d)</string>
+    <string name="add_client">＋ Add client</string>
+    <string name="client_details_coming">Client details coming next</string>
+    <string name="add_client_coming">Add client coming next</string>
 </resources>

@@ -118,6 +118,8 @@ public class MockDataRepository {
         return null;
     }
 
+    public List<Client> getClients() { return new ArrayList<>(clients); }
+
     public User getUserById(String id) {
         for (User user : users) if (user.getId().equals(id)) return user;
         return null;
