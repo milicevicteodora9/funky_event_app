@@ -103,4 +103,13 @@
     <string name="invoice_added">Faktura je dodata</string>
     <string name="invalid_invoice">Unesite broj fakture i ispravan iznos</string>
     <string name="invoice_requires_event">Klijent mora imati događaj pre dodavanja fakture</string>
+    <string name="total_invoiced_year">↗  TOTAL INVOICED · %1$d</string>
+    <string name="actual_year">↗  ACTUAL · %1$d</string>
+    <string name="external_all_events">External · all events</string>
+    <string name="paid_all_invoices">Paid · all invoices</string>
+    <string name="clients_total_external">↗  TOTAL EXTERNAL</string>
+    <string name="clients_total_actual">↗  TOTAL ACTUAL</string>
+    <string name="clients_actual_profit">↗  ACTUAL PROFIT</string>
+    <string name="actual_profit_formula">External − actual · all events</string>
+    <string name="all_event_budgets">All event budgets</string>
 </resources>

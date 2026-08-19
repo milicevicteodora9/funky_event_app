@@ -157,6 +157,33 @@ public class MockDataRepository {
         return invoice;
     }
 
+    public BigDecimal getInvoicedTotal(int year, String currency) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Invoice invoice : invoices) {
+            boolean invoiced = invoice.getStatus() == InvoiceStatus.ISSUED
+                    || invoice.getStatus() == InvoiceStatus.PAID
+                    || invoice.getStatus() == InvoiceStatus.OVERDUE;
+            if (invoiced && invoice.getIssueDate().getYear() == year
+                    && currency.equalsIgnoreCase(invoice.getCurrency())) total = total.add(invoice.getAmount());
+        }
+        return total;
+    }
+
+    public BigDecimal getPaidInvoiceTotal(int year, String currency) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Invoice invoice : invoices)
+            if (invoice.getStatus() == InvoiceStatus.PAID && invoice.getIssueDate().getYear() == year
+                    && currency.equalsIgnoreCase(invoice.getCurrency())) total = total.add(invoice.getAmount());
+        return total;
+    }
+
+    public BigDecimal getTotalForAllBudgets(BudgetType type) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (BudgetItem item : budgetItems)
+            if (item.getBudgetType() == type) total = total.add(item.getTotal());
+        return total;
+    }
+
     public User getUserById(String id) {
         for (User user : users) if (user.getId().equals(id)) return user;
         return null;

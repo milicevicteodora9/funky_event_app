@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -51,6 +52,38 @@
         <ImageButton android:id="@+id/buttonUsers" style="@style/HeaderIconButton" android:contentDescription="@string/team_users" android:src="@drawable/ic_users" />
         <ImageButton android:id="@+id/buttonAdmin" style="@style/HeaderIconButton" android:contentDescription="@string/user_management" android:src="@drawable/ic_admin" />
         <ImageButton android:id="@+id/buttonLogout" style="@style/HeaderIconButton" android:contentDescription="@string/logout" android:src="@drawable/ic_logout" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="104dp"
+        android:layout_marginHorizontal="14dp" android:layout_marginTop="8dp" android:orientation="horizontal">
+        <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1" app:cardBackgroundColor="@color/funky_surface" app:cardCornerRadius="16dp"
+            app:cardElevation="1dp" app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical"
+                android:orientation="vertical" android:paddingHorizontal="14dp" android:paddingVertical="11dp">
+                <TextView android:id="@+id/textInvoicedLabel" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/funky_text_secondary" android:textSize="11sp" android:textStyle="bold" tools:text="↗  TOTAL INVOICED · 2026" />
+                <TextView android:id="@+id/textInvoicedValue" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp" android:ellipsize="end" android:maxLines="1" android:textColor="@color/funky_text"
+                    android:textSize="22sp" android:textStyle="bold" tools:text="20.100,00 EUR" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+                    android:text="@string/all_event_budgets" android:textColor="@color/funky_text_secondary" android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.card.MaterialCardView android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_marginStart="9dp" android:layout_weight="1" app:cardBackgroundColor="@color/funky_surface"
+            app:cardCornerRadius="16dp" app:cardElevation="1dp" app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical"
+                android:orientation="vertical" android:paddingHorizontal="14dp" android:paddingVertical="11dp">
+                <TextView android:id="@+id/textActualLabel" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textColor="@color/funky_text_secondary" android:textSize="11sp" android:textStyle="bold" tools:text="↗  ACTUAL · 2026" />
+                <TextView android:id="@+id/textActualValue" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp" android:ellipsize="end" android:maxLines="1" android:textColor="@color/funky_mint"
+                    android:textSize="22sp" android:textStyle="bold" tools:text="5.900,00 EUR" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp"
+                    android:text="@string/actual_profit_formula" android:textColor="@color/funky_text_secondary" android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
     <LinearLayout

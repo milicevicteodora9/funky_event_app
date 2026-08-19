@@ -15,10 +15,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.ClientAdapter;
+import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.repositories.MockDataRepository;
+
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public class ClientsFragment extends Fragment {
     private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
+    private TextView invoicedLabel, invoicedValue, actualLabel, actualValue;
 
     public ClientsFragment() { super(R.layout.fragment_clients); }
 
@@ -35,6 +43,12 @@ public class ClientsFragment extends Fragment {
         clientsList.setHasFixedSize(true);
         adapter.submitList(repository.getClients());
 
+        invoicedLabel = view.findViewById(R.id.textInvoicedLabel);
+        invoicedValue = view.findViewById(R.id.textInvoicedValue);
+        actualLabel = view.findViewById(R.id.textActualLabel);
+        actualValue = view.findViewById(R.id.textActualValue);
+        bindFinancialOverview();
+
         ((TextView) view.findViewById(R.id.textClientsTitle)).setText(
                 getString(R.string.clients_count, repository.getClients().size()));
         view.findViewById(R.id.buttonAddClient).setOnClickListener(v ->
@@ -43,6 +57,20 @@ public class ClientsFragment extends Fragment {
         view.findViewById(R.id.buttonTeam).setOnClickListener(this::showComingLater);
         int[] informationalViews = {R.id.buttonCashbox, R.id.buttonUsers, R.id.buttonAdmin, R.id.buttonLogout};
         for (int id : informationalViews) view.findViewById(id).setOnClickListener(this::showComingLater);
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        if (invoicedValue != null) bindFinancialOverview();
+    }
+
+    private void bindFinancialOverview() {
+        invoicedLabel.setText(R.string.clients_total_external);
+        actualLabel.setText(R.string.clients_actual_profit);
+        BigDecimal external = repository.getTotalForAllBudgets(BudgetType.EXTERNAL);
+        BigDecimal actual = repository.getTotalForAllBudgets(BudgetType.ACTUAL);
+        invoicedValue.setText(moneyFormat.format(external) + " EUR");
+        actualValue.setText(moneyFormat.format(external.subtract(actual)) + " EUR");
     }
 
     private void returnToEvents(View view) {
