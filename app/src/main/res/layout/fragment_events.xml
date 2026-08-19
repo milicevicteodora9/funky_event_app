@@ -9,6 +9,15 @@
     android:paddingTop="12dp"
     tools:context=".fragments.EventsFragment">
 
+    <ImageView
+        android:id="@+id/imageFunkyHeader"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="4dp"
+        android:contentDescription="@string/brand_logo"
+        android:scaleType="centerCrop" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,25 +26,19 @@
         android:paddingHorizontal="16dp"
         android:paddingVertical="8dp">
 
-        <ImageView
-            android:id="@+id/imageFunkyLogo"
-            android:layout_width="76dp"
-            android:layout_height="44dp"
-            android:contentDescription="@string/brand_logo"
-            android:scaleType="centerInside" />
-
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:orientation="vertical">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:text="@string/user_name"
                 android:textColor="@color/funky_text"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
             <TextView
                 android:layout_width="wrap_content"
@@ -55,9 +58,9 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="50dp"
         android:orientation="horizontal"
-        android:paddingHorizontal="14dp"
+        android:paddingHorizontal="26dp"
         android:paddingVertical="4dp">
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonEvents"
@@ -68,14 +71,14 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonClients"
             style="@style/MainNavButton"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="7dp"
             android:layout_weight="1"
             android:backgroundTint="@color/funky_pink"
             android:text="@string/clients" />
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonTeam"
             style="@style/MainNavButton"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="7dp"
             android:layout_weight="1"
             android:backgroundTint="@color/funky_purple"
             android:text="@string/team" />
@@ -83,24 +86,69 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="58dp"
-        android:layout_marginTop="8dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="6dp"
         android:background="@color/funky_surface"
         android:orientation="horizontal">
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonCurrent"
-            style="@style/EventFilterButton"
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:textColor="@color/funky_mint"
-            app:strokeColor="@color/funky_mint"
-            app:strokeWidth="3dp"
-            tools:text="Current (3)" />
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonPast"
-            style="@style/EventFilterButton"
+            android:orientation="vertical">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonCurrent"
+                style="@style/EventFilterButton"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:textColor="@color/funky_mint"
+                tools:text="Current (3)" />
+            <View
+                android:id="@+id/indicatorCurrent"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginHorizontal="16dp"
+                android:background="@color/funky_mint" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            tools:text="Past (2)" />
+            android:orientation="vertical">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonPast"
+                style="@style/EventFilterButton"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                tools:text="Past (2)" />
+            <View
+                android:id="@+id/indicatorPast"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_marginHorizontal="16dp"
+                android:background="@color/funky_mint"
+                android:visibility="invisible" />
+        </LinearLayout>
     </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonAddEvent"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="2dp"
+        android:backgroundTint="@color/funky_mint"
+        android:text="@string/add_new_event"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="16dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerEvents"
@@ -109,7 +157,7 @@
         android:layout_weight="1"
         android:clipToPadding="false"
         android:paddingHorizontal="14dp"
-        android:paddingTop="16dp"
+        android:paddingTop="12dp"
         android:paddingBottom="20dp"
         tools:listitem="@layout/item_event" />
 </LinearLayout>
