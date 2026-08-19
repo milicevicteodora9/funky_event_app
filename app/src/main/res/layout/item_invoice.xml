@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp"
+    android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/funky_surface" app:cardCornerRadius="12dp" app:cardElevation="0dp"
+    app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="76dp"
+        android:orientation="vertical" android:padding="12dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+            <TextView android:id="@+id/textInvoiceNumber" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:textColor="@color/funky_text" android:textSize="15sp" android:textStyle="bold"
+                tools:text="FB-2026-056" />
+            <TextView android:id="@+id/textInvoiceStatus" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:background="@color/funky_badge" android:paddingHorizontal="8dp" android:paddingVertical="4dp"
+                android:textColor="@color/funky_text_secondary" android:textSize="10sp" android:textStyle="bold" tools:text="PAID" />
+        </LinearLayout>
+        <TextView android:id="@+id/textInvoiceEvent" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:ellipsize="end" android:maxLines="1" android:textColor="@color/funky_text_secondary"
+            android:textSize="12sp" tools:text="Addiko Bank Promo Weekend" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp">
+            <TextView android:id="@+id/textInvoiceDate" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:textColor="@color/funky_text_secondary" android:textSize="12sp" tools:text="7 Jul 2026" />
+            <TextView android:id="@+id/textInvoiceAmount" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textColor="@color/funky_text" android:textSize="13sp" android:textStyle="bold" tools:text="3.150,00 EUR" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

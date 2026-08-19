@@ -24,8 +24,11 @@ public class ClientsFragment extends Fragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        ClientAdapter adapter = new ClientAdapter(client ->
-                Toast.makeText(requireContext(), R.string.client_details_coming, Toast.LENGTH_SHORT).show());
+        ClientAdapter adapter = new ClientAdapter(client -> {
+            Bundle arguments = new Bundle();
+            arguments.putString("clientId", client.getId());
+            Navigation.findNavController(view).navigate(R.id.action_clientsFragment_to_clientDetailsFragment, arguments);
+        });
         RecyclerView clientsList = view.findViewById(R.id.recyclerClients);
         clientsList.setLayoutManager(new LinearLayoutManager(requireContext()));
         clientsList.setAdapter(adapter);

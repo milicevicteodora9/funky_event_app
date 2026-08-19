@@ -10,6 +10,8 @@ import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventAssignment;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.EventType;
+import com.example.funkyeventapp.models.Invoice;
+import com.example.funkyeventapp.models.InvoiceStatus;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.models.UserRole;
 
@@ -28,6 +30,7 @@ public class MockDataRepository {
     private final List<Budget> budgets = new ArrayList<>();
     private final List<BudgetCategory> budgetCategories = new ArrayList<>();
     private final List<BudgetItem> budgetItems = new ArrayList<>();
+    private final List<Invoice> invoices = new ArrayList<>();
     private long mockIdCounter = 1000;
 
     private MockDataRepository() {
@@ -36,6 +39,7 @@ public class MockDataRepository {
         seedEvents();
         seedAssignments();
         seedBudgets();
+        seedInvoices();
     }
 
     public static MockDataRepository getInstance() { return INSTANCE; }
@@ -118,7 +122,40 @@ public class MockDataRepository {
         return null;
     }
 
+    private void seedInvoices() {
+        invoices.add(invoice("inv_1", "1", "client_addiko", "FB-2026-081", "2026-08-12", "2026-08-27", "4200.00", "EUR", InvoiceStatus.ISSUED, "Branding campaign advance."));
+        invoices.add(invoice("inv_2", "4", "client_addiko", "FB-2026-056", "2026-07-07", "2026-08-06", "3150.00", "EUR", InvoiceStatus.PAID, "Promo weekend final invoice."));
+        invoices.add(invoice("inv_3", "2", "client_tiger", "FB-2026-090", "2026-08-15", "2026-09-18", "5800.00", "EUR", InvoiceStatus.DRAFT, "Store opening production."));
+        invoices.add(invoice("inv_4", "5", "client_tiger", "FB-2026-041", "2026-05-20", "2026-06-04", "2750.00", "EUR", InvoiceStatus.PAID, "Spring launch."));
+        invoices.add(invoice("inv_5", "3", "client_expo", "FB-2026-094", "2026-08-18", "2026-09-17", "7600.00", "EUR", InvoiceStatus.ISSUED, "Summer activation advance."));
+    }
+
+    private Invoice invoice(String id, String eventId, String clientId, String number,
+                            String issueDate, String dueDate, String amount, String currency,
+                            InvoiceStatus status, String notes) {
+        return new Invoice(id, eventId, clientId, number, LocalDate.parse(issueDate),
+                LocalDate.parse(dueDate), new BigDecimal(amount), currency, status, "", notes);
+    }
+
     public List<Client> getClients() { return new ArrayList<>(clients); }
+
+    public List<Event> getEventsForClient(String clientId) {
+        List<Event> result = new ArrayList<>();
+        for (Event event : events) if (event.getClientId().equals(clientId)) result.add(event);
+        return result;
+    }
+
+    public List<Invoice> getInvoicesForClient(String clientId) {
+        List<Invoice> result = new ArrayList<>();
+        for (Invoice invoice : invoices) if (invoice.getClientId().equals(clientId)) result.add(invoice);
+        return result;
+    }
+
+    public Invoice addInvoice(Invoice invoice) {
+        if (invoice.getId() == null || invoice.getId().trim().isEmpty()) invoice.setId(nextId("invoice"));
+        invoices.add(invoice);
+        return invoice;
+    }
 
     public User getUserById(String id) {
         for (User user : users) if (user.getId().equals(id)) return user;

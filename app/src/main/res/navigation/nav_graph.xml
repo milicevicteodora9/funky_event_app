@@ -25,5 +25,18 @@
     <fragment
         android:id="@+id/clientsFragment"
         android:name="com.example.funkyeventapp.fragments.ClientsFragment"
-        android:label="@string/clients" />
+        android:label="@string/clients">
+        <action
+            android:id="@+id/action_clientsFragment_to_clientDetailsFragment"
+            app:destination="@id/clientDetailsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/clientDetailsFragment"
+        android:name="com.example.funkyeventapp.fragments.ClientDetailsFragment"
+        android:label="@string/client_details">
+        <argument android:name="clientId" app:argType="string" />
+        <action
+            android:id="@+id/action_clientDetailsFragment_to_eventDetailsFragment"
+            app:destination="@id/eventDetailsFragment" />
+    </fragment>
 </navigation>

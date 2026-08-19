@@ -80,4 +80,27 @@
     <string name="add_client">＋ Add client</string>
     <string name="client_details_coming">Client details coming next</string>
     <string name="add_client_coming">Add client coming next</string>
+    <string name="client_details">Client details</string>
+    <string name="client_not_found">Klijent nije pronađen</string>
+    <string name="summary">SUMMARY</string>
+    <string name="invoices">INVOICES</string>
+    <string name="summary_total">TOTAL\n%1$d</string>
+    <string name="summary_current">CURRENT\n%1$d</string>
+    <string name="summary_completed">COMPLETED\n%1$d</string>
+    <string name="summary_revenue">REVENUE (PAID)\n%1$s</string>
+    <string name="summary_profit">PROFIT\n%1$s</string>
+    <string name="not_available">N/A</string>
+    <string name="unknown_event">Unknown event</string>
+    <string name="no_client_events">Nema događaja za ovog klijenta</string>
+    <string name="no_client_invoices">Nema faktura za ovog klijenta</string>
+    <string name="invoice_dialog_details">Event: %1$s\nIssued: %2$s\nDue: %3$s\nAmount: %4$s %5$s\nStatus: %6$s\n\n%7$s</string>
+    <string name="add_invoice">＋ Add invoice</string>
+    <string name="new_invoice">New invoice</string>
+    <string name="invoice_number">Invoice number</string>
+    <string name="amount">Amount</string>
+    <string name="currency">Currency</string>
+    <string name="select_event">Event</string>
+    <string name="invoice_added">Faktura je dodata</string>
+    <string name="invalid_invoice">Unesite broj fakture i ispravan iznos</string>
+    <string name="invoice_requires_event">Klijent mora imati događaj pre dodavanja fakture</string>
 </resources>
