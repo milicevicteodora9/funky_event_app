@@ -165,4 +165,17 @@
     <string name="full_name_required">Full name is required</string>
     <string name="team_member_saved">Team member added</string>
     <string name="team_member_updated">Team member updated</string>
+    <string name="team_member_details">Team member details</string>
+    <string name="team_member_not_found">Team member nije pronađen</string>
+    <string name="contact">CONTACT</string>
+    <string name="financial_summary">FINANCIAL SUMMARY</string>
+    <string name="fees">FEES</string>
+    <string name="paid">PAID</string>
+    <string name="saldo">SALDO</string>
+    <string name="status_active">ACTIVE</string>
+    <string name="status_inactive">INACTIVE</string>
+    <string name="copy_bank_account">Copy bank account</string>
+    <string name="bank_account_copied">Bank account copied</string>
+    <string name="notes_prefix">Notes   </string>
+    <string name="no_compatible_app">No compatible app found</string>
 </resources>

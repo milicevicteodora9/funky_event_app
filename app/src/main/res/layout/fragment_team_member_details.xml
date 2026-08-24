@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/funky_background" android:fillViewport="true" tools:context=".fragments.TeamMemberDetailsFragment">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="54dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageButton android:id="@+id/buttonBackTeamMember" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/back" android:padding="10dp" android:src="@drawable/ic_back" app:tint="@color/funky_text_secondary" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/textTeamMemberDetailsName" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="@color/funky_text" android:textSize="20sp" android:textStyle="bold" tools:text="Aleksandar Lazić" />
+                <TextView android:id="@+id/textTeamMemberStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:textColor="@color/funky_mint" android:textSize="11sp" android:textStyle="bold" tools:text="ACTIVE" />
+            </LinearLayout>
+            <ImageButton android:id="@+id/buttonEditTeamMemberDetails" android:layout_width="42dp" android:layout_height="42dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/edit" android:padding="10dp" android:src="@drawable/ic_edit" app:tint="@color/funky_text_secondary" />
+        </LinearLayout>
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:letterSpacing="0.05" android:text="@string/contact" android:textColor="@color/funky_text_secondary" android:textSize="13sp" android:textStyle="bold" />
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" app:cardBackgroundColor="@color/funky_surface" app:cardCornerRadius="12dp" app:cardElevation="0dp" app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="14dp" android:paddingVertical="5dp">
+                <TextView android:id="@+id/rowTeamPhone" style="@style/TeamContactRow" android:textColor="@color/funky_text" tools:text="☎   +381 63 223960" />
+                <View android:id="@+id/dividerTeamPhone" style="@style/TeamContactDivider" />
+                <TextView android:id="@+id/rowTeamEmail" style="@style/TeamContactRow" android:textColor="@color/funky_mint" tools:text="✉   aleksandar@email.rs" />
+                <View android:id="@+id/dividerTeamEmail" style="@style/TeamContactDivider" />
+                <TextView android:id="@+id/rowTeamCity" style="@style/TeamContactRow" tools:text="⌖   Beograd" />
+                <View android:id="@+id/dividerTeamCity" style="@style/TeamContactDivider" />
+                <LinearLayout android:id="@+id/rowTeamBank" android:layout_width="match_parent" android:layout_height="44dp" android:gravity="center_vertical" android:orientation="horizontal">
+                    <TextView android:id="@+id/textTeamBank" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textColor="@color/funky_text_secondary" android:textSize="13sp" tools:text="▣   265-000000648353-89" />
+                    <ImageButton android:id="@+id/buttonCopyTeamBank" android:layout_width="36dp" android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/copy_bank_account" android:padding="9dp" android:src="@drawable/ic_copy" app:tint="@color/funky_text_secondary" />
+                </LinearLayout>
+                <View android:id="@+id/dividerTeamBank" style="@style/TeamContactDivider" />
+                <TextView android:id="@+id/rowTeamNotes" style="@style/TeamContactRow" android:maxLines="4" tools:text="Notes   Available for weekend events." />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:letterSpacing="0.05" android:text="@string/financial_summary" android:textColor="@color/funky_text_secondary" android:textSize="13sp" android:textStyle="bold" />
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="86dp" android:layout_marginTop="8dp" app:cardBackgroundColor="@color/funky_surface" app:cardCornerRadius="12dp" app:cardElevation="0dp" app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:orientation="horizontal">
+                <LinearLayout style="@style/TeamSummaryColumn"><TextView style="@style/TeamSummaryLabel" android:text="@string/fees" /><TextView android:id="@+id/textTeamFees" style="@style/TeamSummaryValue" tools:text="3.200,00 €" /></LinearLayout>
+                <LinearLayout style="@style/TeamSummaryColumn"><TextView style="@style/TeamSummaryLabel" android:text="@string/paid" /><TextView android:id="@+id/textTeamPaid" style="@style/TeamSummaryValue" tools:text="1.600,00 €" /></LinearLayout>
+                <LinearLayout style="@style/TeamSummaryColumn"><TextView style="@style/TeamSummaryLabel" android:text="@string/saldo" /><TextView android:id="@+id/textTeamSaldo" style="@style/TeamSummaryValue" tools:text="1.600,00 €" /></LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+</ScrollView>

@@ -34,7 +34,12 @@
         <action android:id="@+id/action_clientsFragment_to_cashboxFragment" app:destination="@id/cashboxFragment" />
         <action android:id="@+id/action_clientsFragment_to_teamFragment" app:destination="@id/teamFragment" />
     </fragment>
-    <fragment android:id="@+id/teamFragment" android:name="com.example.funkyeventapp.fragments.TeamFragment" android:label="@string/team" />
+    <fragment android:id="@+id/teamFragment" android:name="com.example.funkyeventapp.fragments.TeamFragment" android:label="@string/team">
+        <action android:id="@+id/action_teamFragment_to_teamMemberDetailsFragment" app:destination="@id/teamMemberDetailsFragment" />
+    </fragment>
+    <fragment android:id="@+id/teamMemberDetailsFragment" android:name="com.example.funkyeventapp.fragments.TeamMemberDetailsFragment" android:label="@string/team_member_details">
+        <argument android:name="teamMemberId" app:argType="string" />
+    </fragment>
     <fragment
         android:id="@+id/clientDetailsFragment"
         android:name="com.example.funkyeventapp.fragments.ClientDetailsFragment"
