@@ -150,4 +150,19 @@
     <string name="receipt_details">Seller: %1$s\nTax ID: %2$s\nReceipt: %3$s\nDate: %4$s\nAmount: %5$s %6$s\nStatus: %7$s</string>
     <string name="document_picker_error">Dokument nije moguće otvoriti</string>
     <string name="all_event_budgets">All event budgets</string>
+    <string name="add_short">＋ Add</string>
+    <string name="total_debt">Total debt</string>
+    <string name="search_team_hint">Search by name, phone, city, email…</string>
+    <string name="team_member_details_coming">Team member details coming next</string>
+    <string name="full_name">Full name *</string>
+    <string name="phone">Phone</string>
+    <string name="email">Email</string>
+    <string name="city">City</string>
+    <string name="bank_account">Bank account</string>
+    <string name="active">Active</string>
+    <string name="new_team_member">Add team member</string>
+    <string name="edit_team_member">Edit team member</string>
+    <string name="full_name_required">Full name is required</string>
+    <string name="team_member_saved">Team member added</string>
+    <string name="team_member_updated">Team member updated</string>
 </resources>

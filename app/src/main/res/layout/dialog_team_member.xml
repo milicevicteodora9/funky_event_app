@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingTop="4dp">
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="@string/full_name">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputTeamFullName" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPersonName" android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:hint="@string/phone">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputTeamPhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="phone" android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:hint="@string/email">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputTeamEmail" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textEmailAddress" android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:hint="@string/city">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputTeamCity" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:hint="@string/bank_account">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputTeamBankAccount" android:layout_width="match_parent" android:layout_height="wrap_content" android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:hint="@string/notes">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputTeamNotes" android:layout_width="match_parent" android:layout_height="72dp" android:gravity="top" android:inputType="textMultiLine" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switchTeamActive" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="@string/active" />
+    </LinearLayout>
+</ScrollView>

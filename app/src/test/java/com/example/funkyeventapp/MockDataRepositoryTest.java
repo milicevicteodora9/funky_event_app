@@ -19,6 +19,8 @@ import com.example.funkyeventapp.models.DocumentSource;
 import com.example.funkyeventapp.models.Receipt;
 import com.example.funkyeventapp.models.ReceiptProcessingStatus;
 import com.example.funkyeventapp.models.ScannedDocument;
+import com.example.funkyeventapp.models.TeamMember;
+import com.example.funkyeventapp.models.UserRole;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 
 import org.junit.Test;
@@ -29,6 +31,23 @@ import java.util.List;
 
 public class MockDataRepositoryTest {
     private final MockDataRepository repository = MockDataRepository.getInstance();
+
+    @Test public void teamDebtIsComputedFromFeesAndPaymentsAndIgnoresCredit() {
+        TeamMember aleksandar = repository.getTeamMemberById("tm_1");
+        assertNotNull(aleksandar);
+        assertEquals(0, repository.getTotalFeesForMember(aleksandar.getId()).compareTo(new BigDecimal("3200")));
+        assertEquals(0, repository.getTotalPaidForMember(aleksandar.getId()).compareTo(new BigDecimal("1600")));
+        assertEquals(0, repository.getDebtForMember(aleksandar.getId()).compareTo(new BigDecimal("1600")));
+        assertTrue(repository.getDebtForMember("tm_7").signum() < 0);
+        assertEquals(0, repository.getTotalTeamDebt().compareTo(new BigDecimal("1970")));
+    }
+
+    @Test public void appUsersRemainLimitedToInternalRoles() {
+        assertEquals(3, UserRole.values().length);
+        assertEquals(UserRole.ADMIN, UserRole.valueOf("ADMIN"));
+        assertEquals(UserRole.MANAGER, UserRole.valueOf("MANAGER"));
+        assertEquals(UserRole.COORDINATOR, UserRole.valueOf("COORDINATOR"));
+    }
 
     @Test public void assignmentSelectionAddAndRemoveUsesConcreteUser() {
         List<User> available = repository.getAvailableUsersForEvent("5");
