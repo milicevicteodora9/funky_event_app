@@ -3,6 +3,8 @@ package com.example.funkyeventapp.fragments;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.View;
+import android.net.Uri;
+import android.widget.ImageView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
@@ -48,7 +50,9 @@ public class ReceiptReviewFragment extends Fragment {
         super.onViewCreated(view, state);
         try { source = DocumentSource.valueOf(requireArguments().getString("source")); }
         catch (Exception ignored) { source = DocumentSource.CAMERA; }
-        document = repository.createMockScannedDocument(source);
+        document = repository.getScannedDocumentById(requireArguments().getString("documentId"));
+        if (document == null) document = repository.createMockScannedDocument(source);
+        else source = document.getSource();
         draft = repository.createMockReceiptDraft();
         bindSource(view);
         bindForm(view);
@@ -57,8 +61,15 @@ public class ReceiptReviewFragment extends Fragment {
 
     private void bindSource(View view) {
         ((TextView) view.findViewById(R.id.textReceiptSource)).setText(source.name());
-        ((TextView) view.findViewById(R.id.textReceiptFile)).setText(source == DocumentSource.PDF
-                ? source.name() + " · " + document.getFileName() : source.name().substring(0, 1) + source.name().substring(1).toLowerCase(Locale.ROOT));
+        ((TextView) view.findViewById(R.id.textReceiptFile)).setText(source.name() + " · " + document.getFileName());
+        ImageView preview = view.findViewById(R.id.imageReceiptPreview);
+        if (source == DocumentSource.PDF) {
+            preview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            preview.setImageResource(R.drawable.ic_pdf);
+        } else {
+            try { preview.setImageURI(Uri.parse(document.getFileUri())); }
+            catch (Exception ignored) { preview.setImageResource(R.drawable.ic_cashbox); preview.setScaleType(ImageView.ScaleType.CENTER_INSIDE); }
+        }
     }
 
     private void bindForm(View view) {

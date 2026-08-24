@@ -46,5 +46,6 @@
     </fragment>
     <fragment android:id="@+id/receiptReviewFragment" android:name="com.example.funkyeventapp.fragments.ReceiptReviewFragment" android:label="@string/receipt_review">
         <argument android:name="source" app:argType="string" />
+        <argument android:name="documentId" app:argType="string" app:nullable="true" android:defaultValue="@null" />
     </fragment>
 </navigation>

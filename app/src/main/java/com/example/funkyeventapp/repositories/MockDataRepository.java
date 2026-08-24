@@ -283,8 +283,7 @@ public class MockDataRepository {
 
     public CashboxTransaction saveConfirmedReceiptExpense(ScannedDocument document, Receipt receipt,
             CashboxTransaction transaction) {
-        if (document.getId() == null || document.getId().trim().isEmpty()) document.setId(nextId("document"));
-        scannedDocuments.add(document);
+        saveScannedDocument(document);
         if (receipt.getId() == null || receipt.getId().trim().isEmpty()) receipt.setId(nextId("receipt"));
         receipt.setScannedDocumentId(document.getId());
         receipt.setProcessingStatus(ReceiptProcessingStatus.CONFIRMED);
@@ -293,12 +292,19 @@ public class MockDataRepository {
         return addCashboxTransaction(transaction);
     }
 
+    public ScannedDocument saveScannedDocument(ScannedDocument document) {
+        if (document.getId() == null || document.getId().trim().isEmpty()) document.setId(nextId("document"));
+        if (getScannedDocumentById(document.getId()) == null) scannedDocuments.add(document);
+        return document;
+    }
+
     public Receipt getReceiptById(String id) {
         for (Receipt receipt : receipts) if (receipt.getId().equals(id)) return receipt;
         return null;
     }
 
     public ScannedDocument getScannedDocumentById(String id) {
+        if (id == null) return null;
         for (ScannedDocument document : scannedDocuments) if (document.getId().equals(id)) return document;
         return null;
     }

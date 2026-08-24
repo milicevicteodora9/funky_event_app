@@ -2,6 +2,11 @@ package com.example.funkyeventapp.fragments;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.os.Environment;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -13,6 +18,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -27,6 +35,7 @@ import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.ExpensePurpose;
 import com.example.funkyeventapp.models.DocumentSource;
 import com.example.funkyeventapp.models.Receipt;
+import com.example.funkyeventapp.models.ScannedDocument;
 import com.example.funkyeventapp.models.TransactionType;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.google.android.material.button.MaterialButton;
@@ -37,10 +46,13 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.io.File;
+import java.io.IOException;
 
 public class CashboxFragment extends Fragment {
     private static final String USER_ID = "user_teodora";
@@ -50,8 +62,39 @@ public class CashboxFragment extends Fragment {
     private Cashbox cashbox;
     private View root;
     private CashboxTransactionAdapter adapter;
+    private Uri pendingCameraUri;
+    private String pendingCameraFileName;
+    private ActivityResultLauncher<Uri> cameraLauncher;
+    private ActivityResultLauncher<String[]> galleryLauncher;
+    private ActivityResultLauncher<String[]> pdfLauncher;
 
     public CashboxFragment() { super(R.layout.fragment_cashbox); }
+
+    @Override public void onCreate(@Nullable Bundle state) {
+        super.onCreate(state);
+        if (state != null) {
+            String uri = state.getString("pendingCameraUri");
+            pendingCameraUri = uri == null ? null : Uri.parse(uri);
+            pendingCameraFileName = state.getString("pendingCameraFileName");
+        }
+        cameraLauncher = registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
+            if (success && pendingCameraUri != null) {
+                saveSelectedDocumentAndOpenReview(pendingCameraUri, pendingCameraFileName, "image/jpeg", DocumentSource.CAMERA);
+            }
+            pendingCameraUri = null;
+            pendingCameraFileName = null;
+        });
+        galleryLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(),
+                uri -> { if (uri != null) handleSelectedDocument(uri, DocumentSource.GALLERY); });
+        pdfLauncher = registerForActivityResult(new ActivityResultContracts.OpenDocument(),
+                uri -> { if (uri != null) handleSelectedDocument(uri, DocumentSource.PDF); });
+    }
+
+    @Override public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (pendingCameraUri != null) outState.putString("pendingCameraUri", pendingCameraUri.toString());
+        outState.putString("pendingCameraFileName", pendingCameraFileName);
+    }
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
@@ -74,17 +117,58 @@ public class CashboxFragment extends Fragment {
         list.setAdapter(adapter);
         view.findViewById(R.id.buttonCashboxBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
         view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> showEntryDialog(null));
-        view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> openReceiptReview(DocumentSource.CAMERA));
-        view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> openReceiptReview(DocumentSource.GALLERY));
-        view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> openReceiptReview(DocumentSource.PDF));
+        view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> launchCamera());
+        view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> galleryLauncher.launch(new String[]{"image/*"}));
+        view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> pdfLauncher.launch(new String[]{"application/pdf"}));
         refreshCashbox();
     }
 
     @Override public void onResume() { super.onResume(); if (cashbox != null && adapter != null) refreshCashbox(); }
 
-    private void openReceiptReview(DocumentSource source) {
-        Bundle args = new Bundle(); args.putString("source", source.name());
+    private void openReceiptReview(DocumentSource source, String documentId) {
+        Bundle args = new Bundle(); args.putString("source", source.name()); args.putString("documentId", documentId);
         Navigation.findNavController(root).navigate(R.id.action_cashboxFragment_to_receiptReviewFragment, args);
+    }
+
+    private void launchCamera() {
+        try {
+            File directory = new File(requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "Receipts");
+            if (!directory.exists() && !directory.mkdirs()) throw new IOException("Cannot create receipt directory");
+            pendingCameraFileName = "receipt_" + System.currentTimeMillis() + ".jpg";
+            File photo = new File(directory, pendingCameraFileName);
+            pendingCameraUri = FileProvider.getUriForFile(requireContext(), requireContext().getPackageName() + ".fileprovider", photo);
+            cameraLauncher.launch(pendingCameraUri);
+        } catch (Exception exception) {
+            pendingCameraUri = null; pendingCameraFileName = null;
+            Toast.makeText(requireContext(), R.string.document_picker_error, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void handleSelectedDocument(Uri uri, DocumentSource source) {
+        try {
+            requireContext().getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } catch (SecurityException ignored) { }
+        String fileName = queryDisplayName(uri);
+        String mimeType = source == DocumentSource.PDF ? "application/pdf" : requireContext().getContentResolver().getType(uri);
+        if (mimeType == null) mimeType = "image/*";
+        saveSelectedDocumentAndOpenReview(uri, fileName, mimeType, source);
+    }
+
+    private void saveSelectedDocumentAndOpenReview(Uri uri, String fileName, String mimeType, DocumentSource source) {
+        ScannedDocument document = new ScannedDocument(null, fileName, uri.toString(), mimeType, source, LocalDateTime.now());
+        repository.saveScannedDocument(document);
+        openReceiptReview(source, document.getId());
+    }
+
+    private String queryDisplayName(Uri uri) {
+        try (Cursor cursor = requireContext().getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (column >= 0) return cursor.getString(column);
+            }
+        } catch (Exception ignored) { }
+        String last = uri.getLastPathSegment();
+        return last == null ? "receipt_document" : last;
     }
 
     private void showReceiptDetails(CashboxTransaction transaction) {

@@ -148,5 +148,6 @@
     <string name="invalid_receipt">Proverite prepoznate podatke i izaberite događaj kada je Event expense</string>
     <string name="receipt_saved">Receipt i Cashbox expense su sačuvani</string>
     <string name="receipt_details">Seller: %1$s\nTax ID: %2$s\nReceipt: %3$s\nDate: %4$s\nAmount: %5$s %6$s\nStatus: %7$s</string>
+    <string name="document_picker_error">Dokument nije moguće otvoriti</string>
     <string name="all_event_budgets">All event budgets</string>
 </resources>
