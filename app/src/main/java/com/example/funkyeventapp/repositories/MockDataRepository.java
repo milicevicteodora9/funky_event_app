@@ -19,8 +19,13 @@ import com.example.funkyeventapp.models.CashboxTransaction;
 import com.example.funkyeventapp.models.Currency;
 import com.example.funkyeventapp.models.ExpensePurpose;
 import com.example.funkyeventapp.models.TransactionType;
+import com.example.funkyeventapp.models.DocumentSource;
+import com.example.funkyeventapp.models.Receipt;
+import com.example.funkyeventapp.models.ReceiptProcessingStatus;
+import com.example.funkyeventapp.models.ScannedDocument;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +43,8 @@ public class MockDataRepository {
     private final List<Invoice> invoices = new ArrayList<>();
     private final List<Cashbox> cashboxes = new ArrayList<>();
     private final List<CashboxTransaction> cashboxTransactions = new ArrayList<>();
+    private final List<ScannedDocument> scannedDocuments = new ArrayList<>();
+    private final List<Receipt> receipts = new ArrayList<>();
     private long mockIdCounter = 1000;
 
     private MockDataRepository() {
@@ -258,6 +265,41 @@ public class MockDataRepository {
         for (BudgetItem item : budgetItems)
             if (item.getBudgetType() == BudgetType.ACTUAL && item.getSourceType() == BudgetItemSource.CASHBOX
                     && transactionId.equals(item.getSourceTransactionId())) return item;
+        return null;
+    }
+
+    public ScannedDocument createMockScannedDocument(DocumentSource source) {
+        String extension = source == DocumentSource.PDF ? ".pdf" : ".jpg";
+        String mimeType = source == DocumentSource.PDF ? "application/pdf" : "image/jpeg";
+        return new ScannedDocument(null, "receipt_20260824" + extension, "mock://receipt" + extension,
+                mimeType, source, LocalDateTime.now());
+    }
+
+    public Receipt createMockReceiptDraft() {
+        return new Receipt(null, "001234", "NIS Petrol", "123456789", LocalDate.of(2026, 8, 24),
+                new BigDecimal("5000"), Currency.RSD, "Mock recognized receipt text",
+                ReceiptProcessingStatus.PROCESSED, null);
+    }
+
+    public CashboxTransaction saveConfirmedReceiptExpense(ScannedDocument document, Receipt receipt,
+            CashboxTransaction transaction) {
+        if (document.getId() == null || document.getId().trim().isEmpty()) document.setId(nextId("document"));
+        scannedDocuments.add(document);
+        if (receipt.getId() == null || receipt.getId().trim().isEmpty()) receipt.setId(nextId("receipt"));
+        receipt.setScannedDocumentId(document.getId());
+        receipt.setProcessingStatus(ReceiptProcessingStatus.CONFIRMED);
+        receipts.add(receipt);
+        transaction.setReceiptId(receipt.getId());
+        return addCashboxTransaction(transaction);
+    }
+
+    public Receipt getReceiptById(String id) {
+        for (Receipt receipt : receipts) if (receipt.getId().equals(id)) return receipt;
+        return null;
+    }
+
+    public ScannedDocument getScannedDocumentById(String id) {
+        for (ScannedDocument document : scannedDocuments) if (document.getId().equals(id)) return document;
         return null;
     }
 

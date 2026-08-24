@@ -25,6 +25,8 @@ import com.example.funkyeventapp.models.BudgetCategory;
 import com.example.funkyeventapp.models.Currency;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.ExpensePurpose;
+import com.example.funkyeventapp.models.DocumentSource;
+import com.example.funkyeventapp.models.Receipt;
 import com.example.funkyeventapp.models.TransactionType;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.google.android.material.button.MaterialButton;
@@ -63,6 +65,7 @@ public class CashboxFragment extends Fragment {
         ((TextView) view.findViewById(R.id.textCashboxOwner)).setText(getString(R.string.cashbox_owner,
                 getString(R.string.user_name), cashbox.getDisplayCurrency().name()));
         adapter = new CashboxTransactionAdapter(new CashboxTransactionAdapter.Listener() {
+            @Override public void onReceipt(CashboxTransaction item) { showReceiptDetails(item); }
             @Override public void onEdit(CashboxTransaction item) { showEntryDialog(item); }
             @Override public void onDelete(CashboxTransaction item) { confirmDelete(item); }
         });
@@ -71,9 +74,27 @@ public class CashboxFragment extends Fragment {
         list.setAdapter(adapter);
         view.findViewById(R.id.buttonCashboxBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
         view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> showEntryDialog(null));
-        int[] futureActions = {R.id.buttonCashboxPdf, R.id.buttonCashboxCamera, R.id.buttonCashboxGallery};
-        for (int id : futureActions) view.findViewById(id).setOnClickListener(this::coming);
+        view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> openReceiptReview(DocumentSource.CAMERA));
+        view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> openReceiptReview(DocumentSource.GALLERY));
+        view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> openReceiptReview(DocumentSource.PDF));
         refreshCashbox();
+    }
+
+    @Override public void onResume() { super.onResume(); if (cashbox != null && adapter != null) refreshCashbox(); }
+
+    private void openReceiptReview(DocumentSource source) {
+        Bundle args = new Bundle(); args.putString("source", source.name());
+        Navigation.findNavController(root).navigate(R.id.action_cashboxFragment_to_receiptReviewFragment, args);
+    }
+
+    private void showReceiptDetails(CashboxTransaction transaction) {
+        Receipt receipt = repository.getReceiptById(transaction.getReceiptId());
+        if (receipt == null) return;
+        String details = getString(R.string.receipt_details, receipt.getSeller(), receipt.getSellerTaxId(),
+                receipt.getReceiptNumber(), receipt.getIssueDate().format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)),
+                money.format(receipt.getTotalAmount()), receipt.getCurrency().name(), receipt.getProcessingStatus().name());
+        new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.receipt_review).setMessage(details)
+                .setPositiveButton(android.R.string.ok, null).show();
     }
 
     private void refreshCashbox() {

@@ -137,5 +137,16 @@
     <string name="eur_amount">EUR amount</string>
     <string name="category">Category</string>
     <string name="delete_transaction_question">Delete this transaction?</string>
+    <string name="receipt_review">Receipt Review</string>
+    <string name="review_detected_data">Review detected receipt data</string>
+    <string name="seller">Seller</string>
+    <string name="seller_tax_id">Seller Tax ID</string>
+    <string name="receipt_number">Receipt number</string>
+    <string name="general_expense_caps">GENERAL EXPENSE</string>
+    <string name="event_expense_caps">EVENT EXPENSE</string>
+    <string name="save_receipt">Save receipt</string>
+    <string name="invalid_receipt">Proverite prepoznate podatke i izaberite događaj kada je Event expense</string>
+    <string name="receipt_saved">Receipt i Cashbox expense su sačuvani</string>
+    <string name="receipt_details">Seller: %1$s\nTax ID: %2$s\nReceipt: %3$s\nDate: %4$s\nAmount: %5$s %6$s\nStatus: %7$s</string>
     <string name="all_event_budgets">All event budgets</string>
 </resources>

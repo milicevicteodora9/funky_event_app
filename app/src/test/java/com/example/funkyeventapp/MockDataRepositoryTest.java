@@ -15,6 +15,10 @@ import com.example.funkyeventapp.models.CashboxTransaction;
 import com.example.funkyeventapp.models.Currency;
 import com.example.funkyeventapp.models.ExpensePurpose;
 import com.example.funkyeventapp.models.TransactionType;
+import com.example.funkyeventapp.models.DocumentSource;
+import com.example.funkyeventapp.models.Receipt;
+import com.example.funkyeventapp.models.ReceiptProcessingStatus;
+import com.example.funkyeventapp.models.ScannedDocument;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 
 import org.junit.Test;
@@ -159,5 +163,57 @@ public class MockDataRepositoryTest {
     private BudgetItem findBudgetItem(String id) {
         for (BudgetItem item : repository.getBudgetItems("1", BudgetType.ACTUAL)) if (id.equals(item.getId())) return item;
         return null;
+    }
+
+    @Test public void receiptSourcesReuseCashboxActualFlowAndManualEntriesStayIndependent() {
+        String cashboxId = repository.getCashboxForUser("user_teodora").getId();
+        BudgetCategory category = repository.getBudgetCategories().get(0);
+        BudgetItem manual = new BudgetItem(null, "1", BudgetType.ACTUAL, category.getId(), "Receipt flow manual guard",
+                BigDecimal.ONE, BigDecimal.ONE, new BigDecimal("7"), "", BudgetItemSource.MANUAL, null, null);
+        repository.addBudgetItem(manual);
+
+        CashboxTransaction cameraGeneral = receiptTransaction(cashboxId, ExpensePurpose.GENERAL, null, category.getId());
+        Receipt cameraReceipt = repository.createMockReceiptDraft();
+        ScannedDocument cameraDocument = repository.createMockScannedDocument(DocumentSource.CAMERA);
+        repository.saveConfirmedReceiptExpense(cameraDocument, cameraReceipt, cameraGeneral);
+        assertNotNull(cameraGeneral.getReceiptId());
+        assertNotNull(repository.getReceiptById(cameraGeneral.getReceiptId()));
+        assertEquals(ReceiptProcessingStatus.CONFIRMED, cameraReceipt.getProcessingStatus());
+        assertEquals(null, repository.getActualBudgetItemForTransaction(cameraGeneral.getId()));
+
+        CashboxTransaction galleryEvent = receiptTransaction(cashboxId, ExpensePurpose.EVENT, "1", category.getId());
+        Receipt galleryReceipt = repository.createMockReceiptDraft();
+        repository.saveConfirmedReceiptExpense(repository.createMockScannedDocument(DocumentSource.GALLERY), galleryReceipt, galleryEvent);
+        assertNotNull(galleryEvent.getReceiptId());
+        assertNotNull(repository.getActualBudgetItemForTransaction(galleryEvent.getId()));
+        assertEquals("1", repository.getActualBudgetItemForTransaction(galleryEvent.getId()).getEventId());
+
+        CashboxTransaction pdfGeneral = receiptTransaction(cashboxId, ExpensePurpose.GENERAL, null, category.getId());
+        ScannedDocument pdfDocument = repository.createMockScannedDocument(DocumentSource.PDF);
+        repository.saveConfirmedReceiptExpense(pdfDocument, repository.createMockReceiptDraft(), pdfGeneral);
+        assertTrue(pdfDocument.getFileName().endsWith(".pdf"));
+        assertNotNull(pdfGeneral.getReceiptId());
+
+        CashboxTransaction manualCashbox = transaction(cashboxId, "10", "10", TransactionType.EXPENSE,
+                ExpensePurpose.GENERAL, null, category.getId());
+        repository.addCashboxTransaction(manualCashbox);
+        assertEquals(null, manualCashbox.getReceiptId());
+
+        repository.deleteCashboxTransaction(galleryEvent.getId());
+        assertEquals(null, repository.getActualBudgetItemForTransaction(galleryEvent.getId()));
+        assertNotNull(findBudgetItem(manual.getId()));
+        assertEquals(BudgetItemSource.MANUAL, findBudgetItem(manual.getId()).getSourceType());
+        repository.deleteCashboxTransaction(cameraGeneral.getId());
+        repository.deleteCashboxTransaction(pdfGeneral.getId());
+        repository.deleteCashboxTransaction(manualCashbox.getId());
+        repository.deleteBudgetItem(manual.getId());
+    }
+
+    private CashboxTransaction receiptTransaction(String cashboxId, ExpensePurpose purpose, String eventId, String categoryId) {
+        CashboxTransaction transaction = new CashboxTransaction(null, cashboxId, "NIS Petrol", "Receipt 001234",
+                new BigDecimal("5000"), Currency.RSD, new BigDecimal("117.20"), new BigDecimal("42.66"),
+                LocalDate.of(2026, 8, 24), TransactionType.EXPENSE, purpose, eventId, null);
+        transaction.setCategoryId(categoryId);
+        return transaction;
     }
 }

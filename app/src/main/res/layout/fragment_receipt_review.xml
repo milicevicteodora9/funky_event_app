@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/funky_background" android:orientation="vertical" tools:context=".fragments.ReceiptReviewFragment">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:gravity="center_vertical" android:paddingHorizontal="12dp">
+        <ImageButton android:id="@+id/buttonReceiptBack" style="@style/HeaderIconButton" android:contentDescription="@string/back" android:src="@drawable/ic_back" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/receipt_review" android:textColor="@color/funky_text" android:textSize="18sp" android:textStyle="bold" />
+            <TextView android:text="@string/review_detected_data" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/funky_text_secondary" android:textSize="11sp" />
+        </LinearLayout>
+        <TextView android:id="@+id/textReceiptSource" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_logo_placeholder"
+            android:paddingHorizontal="9dp" android:paddingVertical="5dp" android:textColor="@color/funky_mint" android:textSize="11sp" android:textStyle="bold" tools:text="CAMERA" />
+    </LinearLayout>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/funky_border" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp">
+            <TextView android:id="@+id/textReceiptFile" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/funky_text_secondary" android:textSize="11sp" tools:text="receipt_20260824.jpg" />
+            <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_marginTop="9dp" android:hint="@string/seller">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputReceiptSeller" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:orientation="horizontal">
+                <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_width="0dp" android:layout_weight="1" android:hint="@string/seller_tax_id">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputReceiptTaxId" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_width="0dp" android:layout_marginStart="7dp" android:layout_weight="1" android:hint="@string/receipt_number">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputReceiptNumber" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_marginTop="7dp" android:hint="@string/date">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputReceiptDate" android:layout_width="match_parent" android:layout_height="wrap_content" android:focusable="false" android:inputType="none" android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:orientation="horizontal">
+                <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_width="0dp" android:layout_weight="1" android:hint="@string/amount">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputReceiptAmount" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_width="110dp" android:layout_marginStart="7dp" android:hint="@string/currency">
+                    <AutoCompleteTextView android:id="@+id/inputReceiptCurrency" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="42dp" android:layout_marginTop="11dp" android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton android:id="@+id/buttonReceiptGeneral" style="@style/BudgetTabButton" android:layout_weight="1" android:text="@string/general_expense_caps" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/buttonReceiptEvent" style="@style/BudgetTabButton" android:layout_marginStart="7dp" android:layout_weight="1" android:text="@string/event_expense_caps" />
+            </LinearLayout>
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/layoutReceiptEvent" style="@style/CashboxInput" android:layout_marginTop="7dp" android:hint="@string/select_event" android:visibility="gone">
+                <AutoCompleteTextView android:id="@+id/inputReceiptEvent" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_marginTop="7dp" android:hint="@string/category">
+                <AutoCompleteTextView android:id="@+id/inputReceiptCategory" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton android:id="@+id/buttonSaveReceipt" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="12dp"
+                android:backgroundTint="@color/funky_mint" android:text="@string/save_receipt" android:textAllCaps="false" android:textColor="@color/white" android:textStyle="bold" app:cornerRadius="14dp" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

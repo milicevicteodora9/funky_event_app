@@ -41,5 +41,10 @@
             android:id="@+id/action_clientDetailsFragment_to_eventDetailsFragment"
             app:destination="@id/eventDetailsFragment" />
     </fragment>
-    <fragment android:id="@+id/cashboxFragment" android:name="com.example.funkyeventapp.fragments.CashboxFragment" android:label="@string/cashbox" />
+    <fragment android:id="@+id/cashboxFragment" android:name="com.example.funkyeventapp.fragments.CashboxFragment" android:label="@string/cashbox">
+        <action android:id="@+id/action_cashboxFragment_to_receiptReviewFragment" app:destination="@id/receiptReviewFragment" />
+    </fragment>
+    <fragment android:id="@+id/receiptReviewFragment" android:name="com.example.funkyeventapp.fragments.ReceiptReviewFragment" android:label="@string/receipt_review">
+        <argument android:name="source" app:argType="string" />
+    </fragment>
 </navigation>

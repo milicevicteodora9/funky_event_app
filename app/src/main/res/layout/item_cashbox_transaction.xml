@@ -19,6 +19,7 @@
                 android:textSize="12sp" android:textStyle="bold" tools:text="↗ Funky Summer Activation" />
         </LinearLayout>
         <LinearLayout android:layout_width="36dp" android:layout_height="match_parent" android:gravity="center" android:orientation="vertical">
+            <ImageButton android:id="@+id/buttonTransactionReceipt" style="@style/HeaderIconButton" android:contentDescription="@string/receipt_review" android:src="@drawable/ic_pdf" android:visibility="gone" />
             <ImageButton android:id="@+id/buttonEditTransaction" style="@style/HeaderIconButton" android:contentDescription="@string/edit" android:src="@drawable/ic_edit" />
             <ImageButton android:id="@+id/buttonDeleteTransaction" style="@style/HeaderIconButton" android:contentDescription="@string/delete" android:src="@drawable/ic_delete" />
         </LinearLayout>
