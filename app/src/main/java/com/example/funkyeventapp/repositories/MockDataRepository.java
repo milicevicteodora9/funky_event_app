@@ -147,12 +147,12 @@ public class MockDataRepository {
 
     private void seedCashbox() {
         cashboxes.add(new Cashbox("cashbox_teodora", "user_teodora", Currency.EUR));
-        cashboxTransactions.add(tx("ct_1", "Cash received", "Project advance", "20000", Currency.RSD, "117.20", "170.65", "2026-08-12", TransactionType.INCOME, ExpensePurpose.GENERAL, null));
-        cashboxTransactions.add(tx("ct_2", "Putarine", "Put do Niša", "1279.96", Currency.RSD, "117.20", "10.92", "2026-08-18", TransactionType.EXPENSE, ExpensePurpose.EVENT, "4"));
-        cashboxTransactions.add(tx("ct_3", "Taxi", "Kristina taxi", "2000", Currency.RSD, "117.20", "17.06", "2026-08-17", TransactionType.EXPENSE, ExpensePurpose.EVENT, "3"));
-        cashboxTransactions.add(tx("ct_4", "Gorivo", "Dostava opreme", "6000", Currency.RSD, "117.20", "51.19", "2026-08-14", TransactionType.EXPENSE, ExpensePurpose.GENERAL, null));
-        cashboxTransactions.add(tx("ct_5", "Smeštaj", "Tim na terenu", "145", Currency.EUR, "1", "145", "2026-08-13", TransactionType.EXPENSE, ExpensePurpose.EVENT, "1"));
-        cashboxTransactions.add(tx("ct_6", "Ručak", "Ručak za produkciju", "4200", Currency.RSD, "117.20", "35.84", "2026-08-12", TransactionType.EXPENSE, ExpensePurpose.EVENT, "2"));
+        addCashboxTransaction(tx("ct_1", "Cash received", "Project advance", "20000", Currency.RSD, "117.20", "170.65", "2026-08-12", TransactionType.INCOME, ExpensePurpose.GENERAL, null));
+        addCashboxTransaction(tx("ct_2", "Putarine", "Put do Niša", "1279.96", Currency.RSD, "117.20", "10.92", "2026-08-18", TransactionType.EXPENSE, ExpensePurpose.EVENT, "4"));
+        addCashboxTransaction(tx("ct_3", "Taxi", "Kristina taxi", "2000", Currency.RSD, "117.20", "17.06", "2026-08-17", TransactionType.EXPENSE, ExpensePurpose.EVENT, "3"));
+        addCashboxTransaction(tx("ct_4", "Gorivo", "Dostava opreme", "6000", Currency.RSD, "117.20", "51.19", "2026-08-14", TransactionType.EXPENSE, ExpensePurpose.GENERAL, null));
+        addCashboxTransaction(tx("ct_5", "Smeštaj", "Tim na terenu", "145", Currency.EUR, "1", "145", "2026-08-13", TransactionType.EXPENSE, ExpensePurpose.EVENT, "1"));
+        addCashboxTransaction(tx("ct_6", "Ručak", "Ručak za produkciju", "4200", Currency.RSD, "117.20", "35.84", "2026-08-12", TransactionType.EXPENSE, ExpensePurpose.EVENT, "2"));
     }
 
     private CashboxTransaction tx(String id, String name, String description, String amount, Currency currency,
@@ -200,15 +200,65 @@ public class MockDataRepository {
     public CashboxTransaction addCashboxTransaction(CashboxTransaction transaction) {
         if (transaction.getId() == null || transaction.getId().trim().isEmpty()) transaction.setId(nextId("cashbox_tx"));
         cashboxTransactions.add(transaction);
-        if (transaction.getTransactionType() == TransactionType.EXPENSE && transaction.getEventId() != null) {
-            String description = transaction.getName();
-            if (transaction.getDescription() != null && !transaction.getDescription().trim().isEmpty())
-                description += " · " + transaction.getDescription().trim();
-            budgetItems.add(new BudgetItem(nextId("item"), transaction.getEventId(), BudgetType.ACTUAL,
-                    "cat_2", description, BigDecimal.ONE, BigDecimal.ONE, transaction.getAmountInEur(), "",
-                    BudgetItemSource.CASHBOX, transaction.getId(), null));
-        }
+        syncActualBudgetItemForTransaction(transaction);
         return transaction;
+    }
+
+    public boolean updateCashboxTransaction(CashboxTransaction updated) {
+        for (int i = 0; i < cashboxTransactions.size(); i++) {
+            if (cashboxTransactions.get(i).getId().equals(updated.getId())) {
+                cashboxTransactions.set(i, updated);
+                syncActualBudgetItemForTransaction(updated);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean deleteCashboxTransaction(String transactionId) {
+        for (int i = 0; i < cashboxTransactions.size(); i++) {
+            if (cashboxTransactions.get(i).getId().equals(transactionId)) {
+                cashboxTransactions.remove(i);
+                removeActualBudgetItemForTransaction(transactionId);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void syncActualBudgetItemForTransaction(CashboxTransaction transaction) {
+        removeActualBudgetItemForTransaction(transaction.getId());
+        boolean eventExpense = transaction.getTransactionType() == TransactionType.EXPENSE
+                && transaction.getExpensePurpose() == ExpensePurpose.EVENT && transaction.getEventId() != null;
+        if (!eventExpense) return;
+        String description = transaction.getName();
+        if (transaction.getDescription() != null && !transaction.getDescription().trim().isEmpty())
+            description += " · " + transaction.getDescription().trim();
+        String categoryId = transaction.getCategoryId();
+        if (categoryId == null || getBudgetCategoryById(categoryId) == null) categoryId = "cat_2";
+        budgetItems.add(new BudgetItem(nextId("item"), transaction.getEventId(), BudgetType.ACTUAL,
+                categoryId, description, BigDecimal.ONE, BigDecimal.ONE, transaction.getAmountInEur(), "",
+                BudgetItemSource.CASHBOX, transaction.getId(), null));
+    }
+
+    public int removeActualBudgetItemForTransaction(String transactionId) {
+        int removed = 0;
+        for (int i = budgetItems.size() - 1; i >= 0; i--) {
+            BudgetItem item = budgetItems.get(i);
+            if (item.getBudgetType() == BudgetType.ACTUAL && item.getSourceType() == BudgetItemSource.CASHBOX
+                    && transactionId.equals(item.getSourceTransactionId())) {
+                budgetItems.remove(i);
+                removed++;
+            }
+        }
+        return removed;
+    }
+
+    public BudgetItem getActualBudgetItemForTransaction(String transactionId) {
+        for (BudgetItem item : budgetItems)
+            if (item.getBudgetType() == BudgetType.ACTUAL && item.getSourceType() == BudgetItemSource.CASHBOX
+                    && transactionId.equals(item.getSourceTransactionId())) return item;
+        return null;
     }
 
     public List<Client> getClients() { return new ArrayList<>(clients); }

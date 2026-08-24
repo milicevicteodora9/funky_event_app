@@ -131,5 +131,11 @@
     <string name="general_expenses">General expenses</string>
     <string name="invalid_cashbox_entry">Unesite naziv i ispravan iznos</string>
     <string name="cashbox_entry_saved">Cashbox entry je dodat</string>
+    <string name="edit_cashbox_entry">Edit cashbox entry</string>
+    <string name="cashbox_entry_updated">Cashbox entry je izmenjen</string>
+    <string name="exchange_rate">Exchange rate</string>
+    <string name="eur_amount">EUR amount</string>
+    <string name="category">Category</string>
+    <string name="delete_transaction_question">Delete this transaction?</string>
     <string name="all_event_budgets">All event budgets</string>
 </resources>

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class CashboxTransaction {
-    private String id, cashboxId, name, description, eventId, receiptId;
+    private String id, cashboxId, name, description, eventId, receiptId, categoryId;
     private BigDecimal amount, exchangeRate, amountInEur;
     private Currency currency;
     private LocalDate date;
@@ -25,4 +25,5 @@ public class CashboxTransaction {
     public LocalDate getDate(){return date;} public void setDate(LocalDate v){date=v;} public TransactionType getTransactionType(){return transactionType;} public void setTransactionType(TransactionType v){transactionType=v;}
     public ExpensePurpose getExpensePurpose(){return expensePurpose;} public void setExpensePurpose(ExpensePurpose v){expensePurpose=v;} public String getEventId(){return eventId;} public void setEventId(String v){eventId=v;}
     public String getReceiptId(){return receiptId;} public void setReceiptId(String v){receiptId=v;}
+    public String getCategoryId(){return categoryId;} public void setCategoryId(String v){categoryId=v;}
 }

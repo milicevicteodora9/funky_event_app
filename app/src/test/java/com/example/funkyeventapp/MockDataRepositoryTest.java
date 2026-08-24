@@ -11,11 +11,16 @@ import com.example.funkyeventapp.models.BudgetItemSource;
 import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.models.EventAssignment;
 import com.example.funkyeventapp.models.User;
+import com.example.funkyeventapp.models.CashboxTransaction;
+import com.example.funkyeventapp.models.Currency;
+import com.example.funkyeventapp.models.ExpensePurpose;
+import com.example.funkyeventapp.models.TransactionType;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public class MockDataRepositoryTest {
@@ -60,5 +65,99 @@ public class MockDataRepositoryTest {
         assertEquals(1, internal.size());
         assertFalse(source == internal.get(0));
         assertEquals(source.getId(), internal.get(0).getSourceBudgetItemId());
+    }
+
+    @Test public void cashboxEditDeleteKeepsOnlyLinkedCashboxActualInSync() {
+        String cashboxId = repository.getCashboxForUser("user_teodora").getId();
+        BudgetCategory category = repository.getBudgetCategories().get(0);
+        BudgetItem manual = new BudgetItem(null, "1", BudgetType.ACTUAL, category.getId(), "Protected manual",
+                BigDecimal.ONE, BigDecimal.ONE, new BigDecimal("9"), "", BudgetItemSource.MANUAL, null, null);
+        repository.addBudgetItem(manual);
+
+        BigDecimal spentBefore = repository.getCashboxTotal(cashboxId, TransactionType.EXPENSE);
+        CashboxTransaction transaction = transaction(cashboxId, "100", "100", TransactionType.EXPENSE,
+                ExpensePurpose.GENERAL, null, category.getId());
+        repository.addCashboxTransaction(transaction);
+        assertEquals(0, repository.getCashboxTotal(cashboxId, TransactionType.EXPENSE)
+                .compareTo(spentBefore.add(new BigDecimal("100"))));
+        assertEquals(null, repository.getActualBudgetItemForTransaction(transaction.getId()));
+
+        transaction.setAmount(new BigDecimal("120"));
+        transaction.setAmountInEur(new BigDecimal("120"));
+        repository.updateCashboxTransaction(transaction);
+        assertEquals(0, repository.getCashboxTotal(cashboxId, TransactionType.EXPENSE)
+                .compareTo(spentBefore.add(new BigDecimal("120"))));
+        assertEquals(null, repository.getActualBudgetItemForTransaction(transaction.getId()));
+
+        transaction.setExpensePurpose(ExpensePurpose.EVENT);
+        transaction.setEventId("1");
+        repository.updateCashboxTransaction(transaction);
+        BudgetItem linked = repository.getActualBudgetItemForTransaction(transaction.getId());
+        assertNotNull(linked);
+        assertEquals("1", linked.getEventId());
+        assertEquals(0, linked.getTotal().compareTo(new BigDecimal("120")));
+
+        transaction.setAmount(new BigDecimal("140"));
+        transaction.setAmountInEur(new BigDecimal("140"));
+        repository.updateCashboxTransaction(transaction);
+        assertEquals(0, repository.getActualBudgetItemForTransaction(transaction.getId()).getTotal().compareTo(new BigDecimal("140")));
+
+        transaction.setEventId("2");
+        repository.updateCashboxTransaction(transaction);
+        linked = repository.getActualBudgetItemForTransaction(transaction.getId());
+        assertEquals("2", linked.getEventId());
+        assertFalse(hasCashboxActual("1", transaction.getId()));
+
+        transaction.setExpensePurpose(ExpensePurpose.GENERAL);
+        transaction.setEventId(null);
+        repository.updateCashboxTransaction(transaction);
+        assertEquals(null, repository.getActualBudgetItemForTransaction(transaction.getId()));
+
+        transaction.setExpensePurpose(ExpensePurpose.EVENT);
+        transaction.setEventId("1");
+        repository.updateCashboxTransaction(transaction);
+        assertNotNull(repository.getActualBudgetItemForTransaction(transaction.getId()));
+
+        transaction.setTransactionType(TransactionType.INCOME);
+        transaction.setExpensePurpose(ExpensePurpose.GENERAL);
+        transaction.setEventId(null);
+        repository.updateCashboxTransaction(transaction);
+        assertEquals(null, repository.getActualBudgetItemForTransaction(transaction.getId()));
+        assertTrue(repository.deleteCashboxTransaction(transaction.getId()));
+
+        CashboxTransaction eventExpense = transaction(cashboxId, "33", "33", TransactionType.EXPENSE,
+                ExpensePurpose.EVENT, "1", category.getId());
+        repository.addCashboxTransaction(eventExpense);
+        assertNotNull(repository.getActualBudgetItemForTransaction(eventExpense.getId()));
+        assertTrue(repository.deleteCashboxTransaction(eventExpense.getId()));
+        assertEquals(null, repository.getActualBudgetItemForTransaction(eventExpense.getId()));
+
+        CashboxTransaction general = transaction(cashboxId, "20", "20", TransactionType.EXPENSE,
+                ExpensePurpose.GENERAL, null, category.getId());
+        repository.addCashboxTransaction(general);
+        assertTrue(repository.deleteCashboxTransaction(general.getId()));
+        assertNotNull(findBudgetItem(manual.getId()));
+        assertEquals(BudgetItemSource.MANUAL, findBudgetItem(manual.getId()).getSourceType());
+        repository.deleteBudgetItem(manual.getId());
+    }
+
+    private CashboxTransaction transaction(String cashboxId, String amount, String eur, TransactionType type,
+            ExpensePurpose purpose, String eventId, String categoryId) {
+        CashboxTransaction transaction = new CashboxTransaction(null, cashboxId, "QA transaction", "",
+                new BigDecimal(amount), Currency.EUR, BigDecimal.ONE, new BigDecimal(eur), LocalDate.of(2026, 8, 24),
+                type, purpose, eventId, null);
+        transaction.setCategoryId(categoryId);
+        return transaction;
+    }
+
+    private boolean hasCashboxActual(String eventId, String transactionId) {
+        for (BudgetItem item : repository.getBudgetItems(eventId, BudgetType.ACTUAL))
+            if (item.getSourceType() == BudgetItemSource.CASHBOX && transactionId.equals(item.getSourceTransactionId())) return true;
+        return false;
+    }
+
+    private BudgetItem findBudgetItem(String id) {
+        for (BudgetItem item : repository.getBudgetItems("1", BudgetType.ACTUAL)) if (id.equals(item.getId())) return item;
+        return null;
     }
 }
