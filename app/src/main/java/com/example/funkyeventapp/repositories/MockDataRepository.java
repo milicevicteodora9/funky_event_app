@@ -187,6 +187,30 @@ public class MockDataRepository {
                 .subtract(getCashboxTotal(cashboxId, TransactionType.EXPENSE));
     }
 
+    public List<Event> getAssignedEventsForUser(String userId) {
+        List<Event> result = new ArrayList<>();
+        for (EventAssignment assignment : assignments) {
+            if (!assignment.getUserId().equals(userId)) continue;
+            Event event = getEventById(assignment.getEventId());
+            if (event != null && !result.contains(event)) result.add(event);
+        }
+        return result;
+    }
+
+    public CashboxTransaction addCashboxTransaction(CashboxTransaction transaction) {
+        if (transaction.getId() == null || transaction.getId().trim().isEmpty()) transaction.setId(nextId("cashbox_tx"));
+        cashboxTransactions.add(transaction);
+        if (transaction.getTransactionType() == TransactionType.EXPENSE && transaction.getEventId() != null) {
+            String description = transaction.getName();
+            if (transaction.getDescription() != null && !transaction.getDescription().trim().isEmpty())
+                description += " · " + transaction.getDescription().trim();
+            budgetItems.add(new BudgetItem(nextId("item"), transaction.getEventId(), BudgetType.ACTUAL,
+                    "cat_2", description, BigDecimal.ONE, BigDecimal.ONE, transaction.getAmountInEur(), "",
+                    BudgetItemSource.CASHBOX, transaction.getId(), null));
+        }
+        return transaction;
+    }
+
     public List<Client> getClients() { return new ArrayList<>(clients); }
 
     public List<Event> getEventsForClient(String clientId) {

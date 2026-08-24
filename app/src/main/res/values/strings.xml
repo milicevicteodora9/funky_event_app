@@ -124,5 +124,12 @@
     <string name="take_photo">▣  Take photo</string>
     <string name="from_gallery">▧  From gallery</string>
     <string name="exchange_reference">1 EUR = 117.20 RSD · 3.97 AED</string>
+    <string name="add_cashbox_entry">Add cashbox entry</string>
+    <string name="date">Date</string>
+    <string name="entry_name">Name</string>
+    <string name="link_to_event">Link to event (optional)</string>
+    <string name="general_expenses">General expenses</string>
+    <string name="invalid_cashbox_entry">Unesite naziv i ispravan iznos</string>
+    <string name="cashbox_entry_saved">Cashbox entry je dodat</string>
     <string name="all_event_budgets">All event budgets</string>
 </resources>
