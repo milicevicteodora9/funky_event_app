@@ -15,6 +15,7 @@
             app:destination="@id/clientsFragment" />
         <action android:id="@+id/action_eventsFragment_to_cashboxFragment" app:destination="@id/cashboxFragment" />
         <action android:id="@+id/action_eventsFragment_to_teamFragment" app:destination="@id/teamFragment" />
+        <action android:id="@+id/action_eventsFragment_to_userManagementFragment" app:destination="@id/userManagementFragment" />
     </fragment>
     <fragment
         android:id="@+id/eventDetailsFragment"
@@ -55,5 +56,10 @@
     <fragment android:id="@+id/receiptReviewFragment" android:name="com.example.funkyeventapp.fragments.ReceiptReviewFragment" android:label="@string/receipt_review">
         <argument android:name="source" app:argType="string" />
         <argument android:name="documentId" app:argType="string" app:nullable="true" android:defaultValue="@null" />
+    </fragment>
+    <fragment android:id="@+id/userManagementFragment" android:name="com.example.funkyeventapp.fragments.UserManagementFragment" android:label="@string/user_management">
+        <action android:id="@+id/action_userManagementFragment_to_eventsFragment" app:destination="@id/eventsFragment" app:popUpTo="@id/eventsFragment" app:popUpToInclusive="true" />
+        <action android:id="@+id/action_userManagementFragment_to_clientsFragment" app:destination="@id/clientsFragment" />
+        <action android:id="@+id/action_userManagementFragment_to_teamFragment" app:destination="@id/teamFragment" />
     </fragment>
 </navigation>

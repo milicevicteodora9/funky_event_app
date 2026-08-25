@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginBottom="9dp" app:cardBackgroundColor="@color/funky_surface" app:cardCornerRadius="14dp"
+    app:cardElevation="0dp" app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp" android:padding="2dp" android:src="@drawable/ic_users" app:tint="@color/funky_text_secondary" android:contentDescription="@null" />
+            <TextView android:id="@+id/textUserName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:textColor="@color/funky_text" android:textSize="16sp" android:textStyle="bold" />
+            <TextView android:id="@+id/textYouBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp"
+                android:background="@drawable/bg_you_badge" android:text="@string/you" android:textColor="@color/funky_mint" android:textSize="12sp" />
+            <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+            <TextView android:id="@+id/textRoleBadge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_user_badge" android:textSize="12sp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <com.google.android.material.button.MaterialButton android:id="@+id/buttonUserRole" android:layout_width="0dp" android:layout_height="46dp" android:layout_weight="1"
+                android:backgroundTint="@color/funky_surface" android:gravity="center_vertical|start" android:insetTop="0dp" android:insetBottom="0dp"
+                android:textAllCaps="false" android:textColor="@color/funky_text" app:cornerRadius="13dp" app:icon="@drawable/ic_chevron_right"
+                app:iconGravity="textEnd" app:iconTint="@color/funky_text_secondary" app:strokeColor="@color/funky_border" app:strokeWidth="1dp" />
+            <ImageButton android:id="@+id/buttonUserActive" android:layout_width="46dp" android:layout_height="46dp" android:layout_marginStart="9dp"
+                android:background="@drawable/bg_user_badge" android:padding="12dp" android:src="@drawable/ic_delete" app:tint="@color/funky_expense" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

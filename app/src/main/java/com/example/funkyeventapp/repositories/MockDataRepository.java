@@ -75,9 +75,10 @@ public class MockDataRepository {
 
     private void seedUsers() {
         users.add(new User("user_teodora", "Teodora", "Milićević", "teodora@funkybusiness.rs", UserRole.ADMIN, true));
-        users.add(new User("user_bojana", "Bojana", "Mumović", "bojana@funkybusiness.rs", UserRole.MANAGER, true));
+        users.add(new User("user_bojana", "Bojana", "Mumović", "bojana@funkybusiness.rs", UserRole.ADMIN, true));
         users.add(new User("user_valentina", "Valentina", "Gajić", "valentina@funkybusiness.rs", UserRole.COORDINATOR, true));
-        users.add(new User("user_nikola", "Nikola", "Simić", "nikola@funkybusiness.rs", UserRole.COORDINATOR, true));
+        users.add(new User("user_vladica", "Vladica", "Veličkov", "vladica@funkybusiness.rs", UserRole.COORDINATOR, true));
+        users.add(new User("user_nikola", "Nikola", "Simić", "nikola@funkybusiness.rs", UserRole.MANAGER, true));
     }
 
     private void seedEvents() {
@@ -412,6 +413,55 @@ public class MockDataRepository {
     public User getUserById(String id) {
         for (User user : users) if (user.getId().equals(id)) return user;
         return null;
+    }
+
+    public List<User> getUsers() { return new ArrayList<>(users); }
+
+    public User addUser(User user) {
+        if (user.getId() == null || user.getId().trim().isEmpty()) user.setId(nextId("user"));
+        users.add(user);
+        return user;
+    }
+
+    public boolean updateUser(User updated) {
+        for (int i = 0; i < users.size(); i++) {
+            if (users.get(i).getId().equals(updated.getId())) {
+                users.set(i, updated);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean setUserRole(String userId, UserRole role) {
+        User user = getUserById(userId);
+        if (user == null || (user.isActive() && user.getRole() == UserRole.ADMIN
+                && role != UserRole.ADMIN && isLastActiveAdmin(userId))) return false;
+        user.setRole(role);
+        return true;
+    }
+
+    public boolean setUserActive(String userId, boolean active) {
+        User user = getUserById(userId);
+        if (user == null || (!active && user.isActive() && user.getRole() == UserRole.ADMIN
+                && isLastActiveAdmin(userId))) return false;
+        user.setActive(active);
+        return true;
+    }
+
+    public boolean isLastActiveAdmin(String userId) {
+        User target = getUserById(userId);
+        if (target == null || !target.isActive() || target.getRole() != UserRole.ADMIN) return false;
+        int activeAdmins = 0;
+        for (User user : users)
+            if (user.isActive() && user.getRole() == UserRole.ADMIN) activeAdmins++;
+        return activeAdmins <= 1;
+    }
+
+    public boolean emailExists(String email) {
+        if (email == null) return false;
+        for (User user : users) if (email.trim().equalsIgnoreCase(user.getEmail())) return true;
+        return false;
     }
 
     public List<EventAssignment> getAssignmentsForEvent(String eventId) {

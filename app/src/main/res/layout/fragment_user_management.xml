@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/funky_background" android:orientation="vertical">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+        android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="16dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/user_name" android:textColor="@color/funky_text_secondary" android:textSize="16sp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/bg_user_badge"
+            android:text="@string/user_role" android:textColor="@color/funky_text_secondary" android:textSize="12sp" android:textStyle="bold" />
+        <ImageView android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="8dp"
+            android:padding="9dp" android:src="@drawable/ic_cashbox" app:tint="@color/funky_text_secondary" android:contentDescription="@string/cashbox" />
+        <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="9dp"
+            android:src="@drawable/ic_users" app:tint="@color/funky_text_secondary" android:contentDescription="@string/team_users" />
+        <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="9dp"
+            android:src="@drawable/ic_admin" app:tint="@color/funky_mint" android:contentDescription="@string/user_management" />
+    </LinearLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="50dp" android:orientation="horizontal"
+        android:paddingHorizontal="20dp" android:paddingVertical="4dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonEvents" style="@style/MainNavButton"
+            android:layout_weight="1" android:backgroundTint="@color/funky_green" android:text="@string/events" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonClients" style="@style/MainNavButton"
+            android:layout_marginStart="7dp" android:layout_weight="1" android:backgroundTint="@color/funky_pink" android:text="@string/clients" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonTeam" style="@style/MainNavButton"
+            android:layout_marginStart="7dp" android:layout_weight="1" android:backgroundTint="@color/funky_purple" android:text="@string/team" />
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/funky_border" />
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical"
+        android:orientation="horizontal" android:paddingStart="12dp" android:paddingTop="14dp" android:paddingEnd="16dp" android:paddingBottom="10dp">
+        <ImageButton android:id="@+id/buttonBack" android:layout_width="40dp" android:layout_height="40dp" android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back" android:padding="10dp" android:src="@drawable/ic_back" app:tint="@color/funky_text_secondary" />
+        <ImageView android:layout_width="30dp" android:layout_height="30dp" android:padding="4dp" android:src="@drawable/ic_admin" app:tint="@color/funky_mint" android:contentDescription="@null" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="6dp" android:layout_weight="1"
+            android:text="@string/user_management_title" android:textColor="@color/funky_text" android:textSize="22sp" android:textStyle="bold" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonAddUser" android:layout_width="wrap_content" android:layout_height="40dp"
+            android:backgroundTint="@color/funky_mint" android:insetTop="0dp" android:insetBottom="0dp" android:text="@string/add_user_compact"
+            android:textAllCaps="false" android:textColor="@color/white" app:cornerRadius="12dp" />
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp" android:layout_marginBottom="10dp" app:cardBackgroundColor="@color/funky_surface"
+        app:cardCornerRadius="14dp" app:cardElevation="0dp" app:strokeColor="@color/funky_border" app:strokeWidth="1dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="14dp"
+            android:text="@string/user_roles_info" android:textColor="@color/funky_text_secondary" android:textSize="13sp" android:lineSpacingExtra="2dp" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/recyclerUsers" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:clipToPadding="false" android:paddingHorizontal="16dp" android:paddingTop="2dp" android:paddingBottom="20dp"
+        tools:listitem="@layout/item_user_management" />
+</LinearLayout>

@@ -194,4 +194,22 @@
     <string name="delete_payment_question">Delete this payment?</string>
     <string name="no_team_fees">No fees</string>
     <string name="no_team_payments">No payments</string>
+    <string name="user_management_title">User Management</string>
+    <string name="add_user">Add user</string>
+    <string name="add_user_compact">＋ Add user</string>
+    <string name="you">You</string>
+    <string name="inactive">Inactive</string>
+    <string name="activate">Activate</string>
+    <string name="deactivate">Deactivate</string>
+    <string name="deactivate_user">Deactivate user</string>
+    <string name="deactivate_user_question">Deactivate this user?</string>
+    <string name="admin_required">At least one active Admin is required.</string>
+    <string name="access_denied">You do not have access to User Management.</string>
+    <string name="first_name_required">First name *</string>
+    <string name="last_name_required">Last name *</string>
+    <string name="email_required">Email *</string>
+    <string name="role_required">Role *</string>
+    <string name="invalid_user">Enter all required fields and a valid email.</string>
+    <string name="email_exists">A user with this email already exists.</string>
+    <string name="user_roles_info"><b>Admin</b> — full control including role management\n<b>Manager</b> — full access to events, clients, team, cashboxes\n<b>Coordinator</b> — only their own cashbox</string>
 </resources>
