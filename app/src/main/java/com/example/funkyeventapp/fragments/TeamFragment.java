@@ -19,6 +19,7 @@ import com.example.funkyeventapp.adapters.TeamMemberAdapter;
 import com.example.funkyeventapp.models.TeamMember;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.ui.TeamMemberDialog;
+import com.example.funkyeventapp.ui.AuthenticatedHeader;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.DecimalFormat;
@@ -44,6 +45,7 @@ public class TeamFragment extends Fragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        if (!AuthenticatedHeader.bind(this, view)) return;
         title = view.findViewById(R.id.textTeamTitle);
         totalDebt = view.findViewById(R.id.textTotalTeamDebt);
         search = view.findViewById(R.id.inputSearchTeam);
@@ -68,7 +70,8 @@ public class TeamFragment extends Fragment {
         view.findViewById(R.id.buttonEvents).setOnClickListener(this::openEvents);
         view.findViewById(R.id.buttonClients).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.clientsFragment));
         view.findViewById(R.id.buttonCashbox).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.cashboxFragment));
-        int[] informational = {R.id.buttonUsers, R.id.buttonAdmin, R.id.buttonLogout};
+        view.findViewById(R.id.buttonAdmin).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.userManagementFragment));
+        int[] informational = {R.id.buttonUsers};
         for (int id : informational) view.findViewById(id).setOnClickListener(this::showComingLater);
         refresh();
     }

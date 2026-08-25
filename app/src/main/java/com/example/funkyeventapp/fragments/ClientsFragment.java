@@ -17,6 +17,7 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.ClientAdapter;
 import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.ui.AuthenticatedHeader;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -32,6 +33,7 @@ public class ClientsFragment extends Fragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        if (!AuthenticatedHeader.bind(this, view)) return;
         ClientAdapter adapter = new ClientAdapter(client -> {
             Bundle arguments = new Bundle();
             arguments.putString("clientId", client.getId());
@@ -58,7 +60,8 @@ public class ClientsFragment extends Fragment {
                 Navigation.findNavController(v).navigate(R.id.action_clientsFragment_to_cashboxFragment));
         view.findViewById(R.id.buttonTeam).setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_clientsFragment_to_teamFragment));
-        int[] informationalViews = {R.id.buttonUsers, R.id.buttonAdmin, R.id.buttonLogout};
+        view.findViewById(R.id.buttonAdmin).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.userManagementFragment));
+        int[] informationalViews = {R.id.buttonUsers};
         for (int id : informationalViews) view.findViewById(id).setOnClickListener(this::showComingLater);
     }
 

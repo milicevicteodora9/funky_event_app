@@ -212,4 +212,22 @@
     <string name="invalid_user">Enter all required fields and a valid email.</string>
     <string name="email_exists">A user with this email already exists.</string>
     <string name="user_roles_info"><b>Admin</b> — full control including role management\n<b>Manager</b> — full access to events, clients, team, cashboxes\n<b>Coordinator</b> — only their own cashbox</string>
+    <string name="login">Login</string>
+    <string name="create_account">Create account</string>
+    <string name="welcome_back">Welcome back</string>
+    <string name="login_subtitle">Sign in to manage your Funky work.</string>
+    <string name="sign_up_subtitle">Create your Funky Business account.</string>
+    <string name="password">Password</string>
+    <string name="password_required">Password *</string>
+    <string name="confirm_password_required">Confirm password *</string>
+    <string name="forgot_password">Forgot password?</string>
+    <string name="coming_later_short">Coming later</string>
+    <string name="enter_credentials">Enter email and password.</string>
+    <string name="invalid_credentials">Invalid email or password.</string>
+    <string name="inactive_account">This account is inactive.</string>
+    <string name="invalid_sign_up">Enter your name and a valid email.</string>
+    <string name="password_minimum">Password must have at least 6 characters.</string>
+    <string name="passwords_do_not_match">Passwords do not match.</string>
+    <string name="account_created">Account created. You can now log in.</string>
+    <string name="mock_login_hint">Mock accounts use password: funky123</string>
 </resources>

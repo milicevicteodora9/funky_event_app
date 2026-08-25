@@ -420,6 +420,8 @@ public class MockDataRepository {
     public User addUser(User user) {
         if (user.getId() == null || user.getId().trim().isEmpty()) user.setId(nextId("user"));
         users.add(user);
+        if (getCashboxForUser(user.getId()) == null)
+            cashboxes.add(new Cashbox(nextId("cashbox"), user.getId(), Currency.EUR));
         return user;
     }
 

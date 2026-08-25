@@ -19,6 +19,7 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.EventAdapter;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.ui.AuthenticatedHeader;
 import com.google.android.material.button.MaterialButton;
 
 public class EventsFragment extends Fragment {
@@ -38,6 +39,7 @@ public class EventsFragment extends Fragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        if (!AuthenticatedHeader.bind(this, view)) return;
         adapter = new EventAdapter(event -> {
             Bundle arguments = new Bundle();
             arguments.putString("eventId", event.getId());
@@ -67,7 +69,7 @@ public class EventsFragment extends Fragment {
         view.findViewById(R.id.buttonAdmin).setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_eventsFragment_to_userManagementFragment));
 
-        int[] informationalViews = {R.id.buttonUsers, R.id.buttonLogout, R.id.buttonAddEvent};
+        int[] informationalViews = {R.id.buttonUsers, R.id.buttonAddEvent};
         for (int id : informationalViews) view.findViewById(id).setOnClickListener(this::showComingLater);
         showEvents(EventStatus.CURRENT);
     }

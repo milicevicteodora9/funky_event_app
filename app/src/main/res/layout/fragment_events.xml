@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
-            <TextView
+            <TextView android:id="@+id/textHeaderUserName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
@@ -40,7 +40,7 @@
                 android:textColor="@color/funky_text"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-            <TextView
+            <TextView android:id="@+id/textHeaderUserRole"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:letterSpacing="0.12"

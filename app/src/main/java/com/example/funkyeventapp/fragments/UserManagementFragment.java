@@ -20,12 +20,13 @@ import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.models.UserRole;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.services.AuthorizationService;
+import com.example.funkyeventapp.services.AuthService;
+import com.example.funkyeventapp.ui.AuthenticatedHeader;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.Arrays;
 
 public class UserManagementFragment extends Fragment {
-    private static final String CURRENT_USER_ID = "user_teodora";
     private final MockDataRepository repository = MockDataRepository.getInstance();
     private UserManagementAdapter adapter;
 
@@ -33,13 +34,14 @@ public class UserManagementFragment extends Fragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        User current = repository.getUserById(CURRENT_USER_ID);
+        if (!AuthenticatedHeader.bind(this, view)) return;
+        User current = AuthService.getInstance().getCurrentUser();
         if (!AuthorizationService.canAccessUserManagement(current)) {
             Toast.makeText(requireContext(), R.string.access_denied, Toast.LENGTH_SHORT).show();
             Navigation.findNavController(view).navigateUp();
             return;
         }
-        adapter = new UserManagementAdapter(CURRENT_USER_ID, new UserManagementAdapter.Listener() {
+        adapter = new UserManagementAdapter(current.getId(), new UserManagementAdapter.Listener() {
             @Override public void onRoleChanged(User user, UserRole role) {
                 if (!repository.setUserRole(user.getId(), role)) showAdminRequired();
                 refresh();
@@ -60,7 +62,8 @@ public class UserManagementFragment extends Fragment {
     private void refresh() { adapter.submitList(repository.getUsers()); }
 
     private void confirmActiveChange(User user) {
-        if (CURRENT_USER_ID.equals(user.getId())) return;
+        User current = AuthService.getInstance().getCurrentUser();
+        if (current != null && current.getId().equals(user.getId())) return;
         if (!user.isActive()) {
             repository.setUserActive(user.getId(), true);
             refresh();
