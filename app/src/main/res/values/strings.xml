@@ -178,4 +178,20 @@
     <string name="bank_account_copied">Bank account copied</string>
     <string name="notes_prefix">Notes   </string>
     <string name="no_compatible_app">No compatible app found</string>
+    <string name="fees_count">FEES (%1$d)</string>
+    <string name="payments_count">PAYMENTS (%1$d)</string>
+    <string name="add_fee">Add fee</string>
+    <string name="edit_fee">Edit fee</string>
+    <string name="add_payment">＋ Add payment</string>
+    <string name="edit_payment">Edit payment</string>
+    <string name="event_required">Event *</string>
+    <string name="description_role_required">Description / Role *</string>
+    <string name="amount_required">Amount *</string>
+    <string name="payment_method">Payment method</string>
+    <string name="invalid_team_fee">Select an event and enter description and positive amount</string>
+    <string name="invalid_team_payment">Enter a positive amount and date</string>
+    <string name="delete_fee_question">Delete this fee?</string>
+    <string name="delete_payment_question">Delete this payment?</string>
+    <string name="no_team_fees">No fees</string>
+    <string name="no_team_payments">No payments</string>
 </resources>

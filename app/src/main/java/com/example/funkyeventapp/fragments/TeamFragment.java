@@ -37,6 +37,11 @@ public class TeamFragment extends Fragment {
 
     public TeamFragment() { super(R.layout.fragment_team); }
 
+    @Override public void onResume() {
+        super.onResume();
+        if (adapter != null) refresh();
+    }
+
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         title = view.findViewById(R.id.textTeamTitle);

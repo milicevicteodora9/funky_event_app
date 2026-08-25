@@ -20,6 +20,8 @@ import com.example.funkyeventapp.models.Receipt;
 import com.example.funkyeventapp.models.ReceiptProcessingStatus;
 import com.example.funkyeventapp.models.ScannedDocument;
 import com.example.funkyeventapp.models.TeamMember;
+import com.example.funkyeventapp.models.TeamFee;
+import com.example.funkyeventapp.models.TeamPayment;
 import com.example.funkyeventapp.models.UserRole;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 
@@ -47,6 +49,29 @@ public class MockDataRepositoryTest {
         assertEquals(UserRole.ADMIN, UserRole.valueOf("ADMIN"));
         assertEquals(UserRole.MANAGER, UserRole.valueOf("MANAGER"));
         assertEquals(UserRole.COORDINATOR, UserRole.valueOf("COORDINATOR"));
+    }
+
+    @Test public void teamFeeAndPaymentCrudAlwaysRecalculatesMemberDebt() {
+        String memberId = "tm_2";
+        BigDecimal feesBefore = repository.getTotalFeesForMember(memberId);
+        BigDecimal paidBefore = repository.getTotalPaidForMember(memberId);
+        TeamFee fee = repository.addTeamFee(new TeamFee(null, memberId, "1", "QA fee",
+                new BigDecimal("400"), Currency.EUR, LocalDate.of(2026, 8, 24), ""));
+        assertEquals(0, repository.getTotalFeesForMember(memberId).compareTo(feesBefore.add(new BigDecimal("400"))));
+        fee.setAmount(new BigDecimal("500"));
+        assertTrue(repository.updateTeamFee(fee));
+        assertEquals(0, repository.getDebtForMember(memberId).compareTo(feesBefore.add(new BigDecimal("500")).subtract(paidBefore)));
+
+        TeamPayment payment = repository.addTeamPayment(new TeamPayment(null, memberId, new BigDecimal("200"),
+                Currency.EUR, LocalDate.of(2026, 8, 24), "CASH", "QA payment"));
+        assertEquals(0, repository.getTotalPaidForMember(memberId).compareTo(paidBefore.add(new BigDecimal("200"))));
+        payment.setAmount(new BigDecimal("300"));
+        assertTrue(repository.updateTeamPayment(payment));
+        assertEquals(0, repository.getDebtForMember(memberId).compareTo(feesBefore.add(new BigDecimal("500")).subtract(paidBefore.add(new BigDecimal("300")))));
+        assertTrue(repository.deleteTeamFee(fee.getId()));
+        assertTrue(repository.deleteTeamPayment(payment.getId()));
+        assertEquals(0, repository.getTotalFeesForMember(memberId).compareTo(feesBefore));
+        assertEquals(0, repository.getTotalPaidForMember(memberId).compareTo(paidBefore));
     }
 
     @Test public void assignmentSelectionAddAndRemoveUsesConcreteUser() {

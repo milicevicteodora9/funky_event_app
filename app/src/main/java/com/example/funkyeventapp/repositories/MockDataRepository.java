@@ -175,6 +175,8 @@ public class MockDataRepository {
                 new BigDecimal(exchangeRate), new BigDecimal(amountInEur), LocalDate.parse(date), type, purpose, eventId, null);
     }
 
+    public List<Event> getAllEvents() { return new ArrayList<>(events); }
+
     private void seedTeam() {
         teamMembers.add(member("tm_1", "Aleksandar Lazić", "+381 63 223960", "aleksandar@email.rs", "Beograd", "265-000000648353-89"));
         teamMembers.add(member("tm_2", "Aleksandra Facepaint", "+381 64 112233", "facepaint@email.rs", "Beograd", ""));
@@ -208,6 +210,12 @@ public class MockDataRepository {
     public boolean updateTeamMember(TeamMember updated){for(int i=0;i<teamMembers.size();i++)if(teamMembers.get(i).getId().equals(updated.getId())){teamMembers.set(i,updated);return true;}return false;}
     public List<TeamFee> getFeesForTeamMember(String id){List<TeamFee> result=new ArrayList<>();for(TeamFee fee:teamFees)if(fee.getTeamMemberId().equals(id))result.add(fee);return result;}
     public List<TeamPayment> getPaymentsForTeamMember(String id){List<TeamPayment> result=new ArrayList<>();for(TeamPayment payment:teamPayments)if(payment.getTeamMemberId().equals(id))result.add(payment);return result;}
+    public TeamFee addTeamFee(TeamFee fee){if(fee.getId()==null||fee.getId().trim().isEmpty())fee.setId(nextId("team_fee"));teamFees.add(fee);return fee;}
+    public boolean updateTeamFee(TeamFee updated){for(int i=0;i<teamFees.size();i++)if(teamFees.get(i).getId().equals(updated.getId())){teamFees.set(i,updated);return true;}return false;}
+    public boolean deleteTeamFee(String id){for(int i=0;i<teamFees.size();i++)if(teamFees.get(i).getId().equals(id)){teamFees.remove(i);return true;}return false;}
+    public TeamPayment addTeamPayment(TeamPayment payment){if(payment.getId()==null||payment.getId().trim().isEmpty())payment.setId(nextId("team_payment"));teamPayments.add(payment);return payment;}
+    public boolean updateTeamPayment(TeamPayment updated){for(int i=0;i<teamPayments.size();i++)if(teamPayments.get(i).getId().equals(updated.getId())){teamPayments.set(i,updated);return true;}return false;}
+    public boolean deleteTeamPayment(String id){for(int i=0;i<teamPayments.size();i++)if(teamPayments.get(i).getId().equals(id)){teamPayments.remove(i);return true;}return false;}
     public BigDecimal getTotalFeesForMember(String id){BigDecimal total=BigDecimal.ZERO;for(TeamFee fee:getFeesForTeamMember(id))total=total.add(fee.getAmount());return total;}
     public BigDecimal getTotalPaidForMember(String id){BigDecimal total=BigDecimal.ZERO;for(TeamPayment payment:getPaymentsForTeamMember(id))total=total.add(payment.getAmount());return total;}
     public BigDecimal getDebtForMember(String id){return getTotalFeesForMember(id).subtract(getTotalPaidForMember(id));}
