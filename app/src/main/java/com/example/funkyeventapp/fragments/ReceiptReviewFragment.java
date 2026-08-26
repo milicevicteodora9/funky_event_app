@@ -37,17 +37,19 @@ import java.util.List;
 import java.util.Locale;
 
 public class ReceiptReviewFragment extends Fragment {
-    private static final String USER_ID = "user_teodora";
     private final MockDataRepository repository = MockDataRepository.getInstance();
     private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
     private DocumentSource source;
     private ScannedDocument document;
     private Receipt draft;
+    private Cashbox targetCashbox;
 
     public ReceiptReviewFragment() { super(R.layout.fragment_receipt_review); }
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
+        String cashboxId = requireArguments().getString("cashboxId");
+        targetCashbox = cashboxId == null ? null : repository.getCashboxById(cashboxId);
         try { source = DocumentSource.valueOf(requireArguments().getString("source")); }
         catch (Exception ignored) { source = DocumentSource.CAMERA; }
         document = repository.getScannedDocumentById(requireArguments().getString("documentId"));
@@ -91,7 +93,7 @@ public class ReceiptReviewFragment extends Fragment {
         date.setText(selectedDate[0].format(dateFormat)); amount.setText(draft.getTotalAmount().toPlainString());
         currency.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, Currency.values()));
         currency.setText(draft.getCurrency().name(), false);
-        List<Event> events = repository.getAssignedEventsForUser(USER_ID);
+        List<Event> events = repository.getAssignedEventsForUser(targetCashbox == null || targetCashbox.getUserId() == null ? "" : targetCashbox.getUserId());
         List<String> eventNames = new ArrayList<>(); for (Event event : events) eventNames.add(event.getName());
         eventInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, eventNames));
         List<BudgetCategory> categories = repository.getBudgetCategories();
@@ -115,7 +117,8 @@ public class ReceiptReviewFragment extends Fragment {
                 draft.setSeller(text(seller)); draft.setSellerTaxId(text(taxId)); draft.setReceiptNumber(text(number));
                 draft.setIssueDate(selectedDate[0]); draft.setTotalAmount(originalAmount); draft.setCurrency(selectedCurrency);
                 BigDecimal rate = exchangeRate(selectedCurrency);
-                Cashbox cashbox = repository.getCashboxForUser(USER_ID);
+                Cashbox cashbox = targetCashbox;
+                if (cashbox == null) throw new IllegalArgumentException();
                 CashboxTransaction transaction = new CashboxTransaction(null, cashbox.getId(), text(seller),
                         "Receipt " + text(number), originalAmount, selectedCurrency, rate,
                         originalAmount.divide(rate, 2, RoundingMode.HALF_UP), selectedDate[0], TransactionType.EXPENSE,

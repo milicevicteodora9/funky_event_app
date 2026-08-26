@@ -56,6 +56,7 @@ public class UserManagementFragment extends Fragment {
         view.findViewById(R.id.buttonEvents).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_userManagementFragment_to_eventsFragment));
         view.findViewById(R.id.buttonClients).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_userManagementFragment_to_clientsFragment));
         view.findViewById(R.id.buttonTeam).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_userManagementFragment_to_teamFragment));
+        view.findViewById(R.id.buttonUsers).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.allCashboxesFragment));
         refresh();
     }
 

@@ -3,10 +3,8 @@
     android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/funky_background" android:fillViewport="true">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="center"
         android:orientation="vertical" android:paddingHorizontal="28dp" android:paddingVertical="30dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center"
-            android:text="Funky." android:textColor="@color/funky_mint" android:textSize="36sp" android:textStyle="bold" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center"
-            android:text="BUSINESS" android:letterSpacing="0.16" android:textColor="@color/funky_text" android:textSize="13sp" android:textStyle="bold" />
+        <ImageView android:layout_width="match_parent" android:layout_height="64dp" android:layout_gravity="center"
+            android:contentDescription="@string/brand_logo" android:scaleType="centerInside" android:src="@drawable/app_logo" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="34dp"
             android:text="@string/welcome_back" android:textColor="@color/funky_text" android:textSize="25sp" android:textStyle="bold" />
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:layout_marginBottom="18dp"

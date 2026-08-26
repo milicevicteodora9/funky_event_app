@@ -40,6 +40,7 @@ import com.example.funkyeventapp.models.TransactionType;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.services.AuthService;
+import com.example.funkyeventapp.services.AuthorizationService;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
@@ -102,14 +103,22 @@ public class CashboxFragment extends Fragment {
         root = view;
         User current = AuthService.getInstance().getCurrentUser();
         if (current == null) { com.example.funkyeventapp.ui.AuthenticatedHeader.openLogin(view); return; }
-        cashbox = repository.getCashboxForUser(current.getId());
+        String requestedCashboxId = getArguments() == null ? null : getArguments().getString("cashboxId");
+        cashbox = requestedCashboxId == null ? repository.getCashboxForUser(current.getId()) : repository.getCashboxById(requestedCashboxId);
+        boolean ownCashbox = cashbox != null && current.getId().equals(cashbox.getUserId());
+        if (cashbox != null && !ownCashbox && !AuthorizationService.canAccessUserManagement(current)) {
+            Toast.makeText(requireContext(), R.string.access_denied, Toast.LENGTH_SHORT).show();
+            Navigation.findNavController(view).popBackStack(); return;
+        }
         if (cashbox == null) {
             Toast.makeText(requireContext(), R.string.cashbox_not_found, Toast.LENGTH_SHORT).show();
             Navigation.findNavController(view).popBackStack();
             return;
         }
+        User owner = cashbox.getUserId() == null ? null : repository.getUserById(cashbox.getUserId());
+        String ownerName = owner == null ? getString(R.string.general_expenses) : owner.getFullName();
         ((TextView) view.findViewById(R.id.textCashboxOwner)).setText(getString(R.string.cashbox_owner,
-                current.getFullName(), cashbox.getDisplayCurrency().name()));
+                ownerName, cashbox.getDisplayCurrency().name()));
         view.findViewById(R.id.buttonLogout).setOnClickListener(v -> {
             AuthService.getInstance().logout();
             com.example.funkyeventapp.ui.AuthenticatedHeader.openLogin(v);
@@ -134,6 +143,7 @@ public class CashboxFragment extends Fragment {
 
     private void openReceiptReview(DocumentSource source, String documentId) {
         Bundle args = new Bundle(); args.putString("source", source.name()); args.putString("documentId", documentId);
+        args.putString("cashboxId", cashbox.getId());
         Navigation.findNavController(root).navigate(R.id.action_cashboxFragment_to_receiptReviewFragment, args);
     }
 
@@ -218,8 +228,7 @@ public class CashboxFragment extends Fragment {
         currency.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, currencies));
         Currency initialCurrency = existing == null ? Currency.RSD : existing.getCurrency();
         currency.setText(initialCurrency.name(), false);
-        User current = AuthService.getInstance().getCurrentUser();
-        List<Event> assignedEvents = repository.getAssignedEventsForUser(current == null ? "" : current.getId());
+        List<Event> assignedEvents = repository.getAssignedEventsForUser(cashbox.getUserId() == null ? "" : cashbox.getUserId());
         List<String> eventLabels = new ArrayList<>();
         eventLabels.add(getString(R.string.general_expenses));
         for (Event event : assignedEvents) eventLabels.add(event.getName());

@@ -61,7 +61,8 @@ public class ClientsFragment extends Fragment {
         view.findViewById(R.id.buttonTeam).setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_clientsFragment_to_teamFragment));
         view.findViewById(R.id.buttonAdmin).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.userManagementFragment));
-        int[] informationalViews = {R.id.buttonUsers};
+        view.findViewById(R.id.buttonUsers).setOnClickListener(v -> Navigation.findNavController(v).navigate(R.id.action_clientsFragment_to_allCashboxesFragment));
+        int[] informationalViews = {};
         for (int id : informationalViews) view.findViewById(id).setOnClickListener(this::showComingLater);
     }
 

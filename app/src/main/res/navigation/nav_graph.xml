@@ -24,6 +24,7 @@
         <action android:id="@+id/action_eventsFragment_to_cashboxFragment" app:destination="@id/cashboxFragment" />
         <action android:id="@+id/action_eventsFragment_to_teamFragment" app:destination="@id/teamFragment" />
         <action android:id="@+id/action_eventsFragment_to_userManagementFragment" app:destination="@id/userManagementFragment" />
+        <action android:id="@+id/action_eventsFragment_to_allCashboxesFragment" app:destination="@id/allCashboxesFragment" />
     </fragment>
     <fragment
         android:id="@+id/eventDetailsFragment"
@@ -42,9 +43,11 @@
             app:destination="@id/clientDetailsFragment" />
         <action android:id="@+id/action_clientsFragment_to_cashboxFragment" app:destination="@id/cashboxFragment" />
         <action android:id="@+id/action_clientsFragment_to_teamFragment" app:destination="@id/teamFragment" />
+        <action android:id="@+id/action_clientsFragment_to_allCashboxesFragment" app:destination="@id/allCashboxesFragment" />
     </fragment>
     <fragment android:id="@+id/teamFragment" android:name="com.example.funkyeventapp.fragments.TeamFragment" android:label="@string/team">
         <action android:id="@+id/action_teamFragment_to_teamMemberDetailsFragment" app:destination="@id/teamMemberDetailsFragment" />
+        <action android:id="@+id/action_teamFragment_to_allCashboxesFragment" app:destination="@id/allCashboxesFragment" />
     </fragment>
     <fragment android:id="@+id/teamMemberDetailsFragment" android:name="com.example.funkyeventapp.fragments.TeamMemberDetailsFragment" android:label="@string/team_member_details">
         <argument android:name="teamMemberId" app:argType="string" />
@@ -59,11 +62,16 @@
             app:destination="@id/eventDetailsFragment" />
     </fragment>
     <fragment android:id="@+id/cashboxFragment" android:name="com.example.funkyeventapp.fragments.CashboxFragment" android:label="@string/cashbox">
+        <argument android:name="cashboxId" app:argType="string" app:nullable="true" android:defaultValue="@null" />
         <action android:id="@+id/action_cashboxFragment_to_receiptReviewFragment" app:destination="@id/receiptReviewFragment" />
+    </fragment>
+    <fragment android:id="@+id/allCashboxesFragment" android:name="com.example.funkyeventapp.fragments.AllCashboxesFragment" android:label="@string/all_cashboxes">
+        <action android:id="@+id/action_allCashboxesFragment_to_cashboxFragment" app:destination="@id/cashboxFragment" />
     </fragment>
     <fragment android:id="@+id/receiptReviewFragment" android:name="com.example.funkyeventapp.fragments.ReceiptReviewFragment" android:label="@string/receipt_review">
         <argument android:name="source" app:argType="string" />
         <argument android:name="documentId" app:argType="string" app:nullable="true" android:defaultValue="@null" />
+        <argument android:name="cashboxId" app:argType="string" app:nullable="true" android:defaultValue="@null" />
     </fragment>
     <fragment android:id="@+id/userManagementFragment" android:name="com.example.funkyeventapp.fragments.UserManagementFragment" android:label="@string/user_management">
         <action android:id="@+id/action_userManagementFragment_to_eventsFragment" app:destination="@id/eventsFragment" app:popUpTo="@id/eventsFragment" app:popUpToInclusive="true" />

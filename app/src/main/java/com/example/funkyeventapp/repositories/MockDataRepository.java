@@ -161,7 +161,11 @@ public class MockDataRepository {
     }
 
     private void seedCashbox() {
+        cashboxes.add(new Cashbox("cashbox_company", null, Currency.EUR));
         cashboxes.add(new Cashbox("cashbox_teodora", "user_teodora", Currency.EUR));
+        for (User user : users)
+            if (getCashboxForUser(user.getId()) == null)
+                cashboxes.add(new Cashbox("cashbox_" + user.getId(), user.getId(), Currency.EUR));
         addCashboxTransaction(tx("ct_1", "Cash received", "Project advance", "20000", Currency.RSD, "117.20", "170.65", "2026-08-12", TransactionType.INCOME, ExpensePurpose.GENERAL, null));
         addCashboxTransaction(tx("ct_2", "Putarine", "Put do Niša", "1279.96", Currency.RSD, "117.20", "10.92", "2026-08-18", TransactionType.EXPENSE, ExpensePurpose.EVENT, "4"));
         addCashboxTransaction(tx("ct_3", "Taxi", "Kristina taxi", "2000", Currency.RSD, "117.20", "17.06", "2026-08-17", TransactionType.EXPENSE, ExpensePurpose.EVENT, "3"));
@@ -223,7 +227,7 @@ public class MockDataRepository {
     public BigDecimal getTotalTeamDebt(){BigDecimal total=BigDecimal.ZERO;for(TeamMember member:teamMembers){BigDecimal debt=getDebtForMember(member.getId());if(debt.signum()>0)total=total.add(debt);}return total;}
 
     public Cashbox getCashboxForUser(String userId) {
-        for (Cashbox cashbox : cashboxes) if (cashbox.getUserId().equals(userId)) return cashbox;
+        for (Cashbox cashbox : cashboxes) if (userId != null && userId.equals(cashbox.getUserId())) return cashbox;
         return null;
     }
 
@@ -424,6 +428,13 @@ public class MockDataRepository {
             cashboxes.add(new Cashbox(nextId("cashbox"), user.getId(), Currency.EUR));
         return user;
     }
+
+    public Cashbox getCashboxById(String id) {
+        for (Cashbox cashbox : cashboxes) if (cashbox.getId().equals(id)) return cashbox;
+        return null;
+    }
+
+    public List<Cashbox> getCashboxes() { return new ArrayList<>(cashboxes); }
 
     public boolean updateUser(User updated) {
         for (int i = 0; i < users.size(); i++) {

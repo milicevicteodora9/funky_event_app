@@ -13,9 +13,9 @@
             android:text="@string/user_role" android:textColor="@color/funky_text_secondary" android:textSize="12sp" android:textStyle="bold" />
         <ImageView android:layout_width="40dp" android:layout_height="40dp" android:layout_marginStart="8dp"
             android:padding="9dp" android:src="@drawable/ic_cashbox" app:tint="@color/funky_text_secondary" android:contentDescription="@string/cashbox" />
-        <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="9dp"
+        <ImageView android:id="@+id/buttonUsers" android:layout_width="40dp" android:layout_height="40dp" android:padding="9dp"
             android:src="@drawable/ic_users" app:tint="@color/funky_text_secondary" android:contentDescription="@string/team_users" />
-        <ImageView android:layout_width="40dp" android:layout_height="40dp" android:padding="9dp"
+        <ImageView android:id="@+id/buttonAdmin" android:layout_width="40dp" android:layout_height="40dp" android:padding="9dp"
             android:src="@drawable/ic_admin" app:tint="@color/funky_mint" android:contentDescription="@string/user_management" />
         <ImageButton android:id="@+id/buttonLogout" android:layout_width="40dp" android:layout_height="40dp" android:background="?attr/selectableItemBackgroundBorderless" android:padding="9dp" android:src="@drawable/ic_logout" app:tint="@color/funky_text_secondary" android:contentDescription="@string/logout" />
     </LinearLayout>

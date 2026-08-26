@@ -230,4 +230,7 @@
     <string name="passwords_do_not_match">Passwords do not match.</string>
     <string name="account_created">Account created. You can now log in.</string>
     <string name="mock_login_hint">Mock accounts use password: funky123</string>
+    <string name="all_cashboxes">All Cashboxes</string>
+    <string name="company_unassigned">COMPANY (UNASSIGNED)</string>
+    <string name="personal_cashboxes">PERSONAL CASHBOXES</string>
 </resources>
