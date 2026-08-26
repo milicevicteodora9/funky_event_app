@@ -14,7 +14,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import com.example.funkyeventapp.R;
-import com.example.funkyeventapp.models.BudgetCategory;
 import com.example.funkyeventapp.models.Cashbox;
 import com.example.funkyeventapp.models.CashboxTransaction;
 import com.example.funkyeventapp.models.Currency;
@@ -25,9 +24,7 @@ import com.example.funkyeventapp.models.Receipt;
 import com.example.funkyeventapp.models.ScannedDocument;
 import com.example.funkyeventapp.models.TransactionType;
 import com.example.funkyeventapp.repositories.MockDataRepository;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -82,27 +79,20 @@ public class ReceiptReviewFragment extends Fragment {
         TextInputEditText amount = view.findViewById(R.id.inputReceiptAmount);
         AutoCompleteTextView currency = view.findViewById(R.id.inputReceiptCurrency);
         AutoCompleteTextView eventInput = view.findViewById(R.id.inputReceiptEvent);
-        AutoCompleteTextView categoryInput = view.findViewById(R.id.inputReceiptCategory);
-        TextInputLayout eventLayout = view.findViewById(R.id.layoutReceiptEvent);
-        MaterialButton general = view.findViewById(R.id.buttonReceiptGeneral);
-        MaterialButton eventButton = view.findViewById(R.id.buttonReceiptEvent);
-        ExpensePurpose[] purpose = {ExpensePurpose.GENERAL};
         LocalDate[] selectedDate = {draft.getIssueDate()};
 
         seller.setText(draft.getSeller()); taxId.setText(draft.getSellerTaxId()); number.setText(draft.getReceiptNumber());
         date.setText(selectedDate[0].format(dateFormat)); amount.setText(draft.getTotalAmount().toPlainString());
         currency.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, Currency.values()));
         currency.setText(draft.getCurrency().name(), false);
-        List<Event> events = repository.getAssignedEventsForUser(targetCashbox == null || targetCashbox.getUserId() == null ? "" : targetCashbox.getUserId());
-        List<String> eventNames = new ArrayList<>(); for (Event event : events) eventNames.add(event.getName());
+        currency.setOnClickListener(v -> currency.showDropDown());
+        List<Event> events = repository.getAllEvents();
+        List<String> eventNames = new ArrayList<>();
+        eventNames.add(getString(R.string.general_expenses));
+        for (Event event : events) eventNames.add(event.getName());
         eventInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, eventNames));
-        List<BudgetCategory> categories = repository.getBudgetCategories();
-        List<String> categoryNames = new ArrayList<>(); for (BudgetCategory category : categories) categoryNames.add(category.getName());
-        categoryInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, categoryNames));
-        if (!categoryNames.isEmpty()) categoryInput.setText(categoryNames.get(0), false);
-        setPurposeStyle(general, eventButton, true);
-        general.setOnClickListener(v -> { purpose[0] = ExpensePurpose.GENERAL; eventLayout.setVisibility(View.GONE); setPurposeStyle(general, eventButton, true); });
-        eventButton.setOnClickListener(v -> { purpose[0] = ExpensePurpose.EVENT; eventLayout.setVisibility(View.VISIBLE); setPurposeStyle(general, eventButton, false); });
+        eventInput.setText(eventNames.get(0), false);
+        eventInput.setOnClickListener(v -> eventInput.showDropDown());
         date.setOnClickListener(v -> new DatePickerDialog(requireContext(), (picker, year, month, day) -> {
             selectedDate[0] = LocalDate.of(year, month + 1, day); date.setText(selectedDate[0].format(dateFormat));
         }, selectedDate[0].getYear(), selectedDate[0].getMonthValue() - 1, selectedDate[0].getDayOfMonth()).show());
@@ -111,9 +101,9 @@ public class ReceiptReviewFragment extends Fragment {
                 BigDecimal originalAmount = new BigDecimal(text(amount).replace(',', '.'));
                 Currency selectedCurrency = Currency.valueOf(currency.getText().toString());
                 int eventIndex = eventNames.indexOf(eventInput.getText().toString());
-                if (text(seller).isEmpty() || text(number).isEmpty() || originalAmount.signum() <= 0
-                        || (purpose[0] == ExpensePurpose.EVENT && eventIndex < 0)) throw new IllegalArgumentException();
-                Event selectedEvent = purpose[0] == ExpensePurpose.EVENT ? events.get(eventIndex) : null;
+                if (text(seller).isEmpty() || text(number).isEmpty() || originalAmount.signum() <= 0 || eventIndex < 0)
+                    throw new IllegalArgumentException();
+                Event selectedEvent = eventIndex > 0 ? events.get(eventIndex - 1) : null;
                 draft.setSeller(text(seller)); draft.setSellerTaxId(text(taxId)); draft.setReceiptNumber(text(number));
                 draft.setIssueDate(selectedDate[0]); draft.setTotalAmount(originalAmount); draft.setCurrency(selectedCurrency);
                 BigDecimal rate = exchangeRate(selectedCurrency);
@@ -122,21 +112,13 @@ public class ReceiptReviewFragment extends Fragment {
                 CashboxTransaction transaction = new CashboxTransaction(null, cashbox.getId(), text(seller),
                         "Receipt " + text(number), originalAmount, selectedCurrency, rate,
                         originalAmount.divide(rate, 2, RoundingMode.HALF_UP), selectedDate[0], TransactionType.EXPENSE,
-                        purpose[0], selectedEvent == null ? null : selectedEvent.getId(), null);
-                int categoryIndex = categoryNames.indexOf(categoryInput.getText().toString());
-                if (categoryIndex >= 0) transaction.setCategoryId(categories.get(categoryIndex).getId());
+                        selectedEvent == null ? ExpensePurpose.GENERAL : ExpensePurpose.EVENT,
+                        selectedEvent == null ? null : selectedEvent.getId(), null);
                 repository.saveConfirmedReceiptExpense(document, draft, transaction);
                 Toast.makeText(requireContext(), R.string.receipt_saved, Toast.LENGTH_SHORT).show();
                 Navigation.findNavController(view).popBackStack();
             } catch (Exception exception) { Toast.makeText(requireContext(), R.string.invalid_receipt, Toast.LENGTH_SHORT).show(); }
         });
-    }
-
-    private void setPurposeStyle(MaterialButton general, MaterialButton event, boolean isGeneral) {
-        general.setBackgroundTintList(requireContext().getColorStateList(isGeneral ? R.color.funky_mint : R.color.funky_badge));
-        event.setBackgroundTintList(requireContext().getColorStateList(isGeneral ? R.color.funky_badge : R.color.funky_mint));
-        general.setTextColor(requireContext().getColor(isGeneral ? R.color.white : R.color.funky_text_secondary));
-        event.setTextColor(requireContext().getColor(isGeneral ? R.color.funky_text_secondary : R.color.white));
     }
 
     private BigDecimal exchangeRate(Currency currency) {
