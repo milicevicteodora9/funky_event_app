@@ -15,4 +15,5 @@
     <color name="funky_completed">#DFF5ED</color>
     <color name="funky_completed_text">#25856C</color>
     <color name="funky_expense">#D9363E</color>
+    <color name="funky_expense_soft">#FDECEE</color>
 </resources>

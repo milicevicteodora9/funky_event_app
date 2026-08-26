@@ -29,7 +29,6 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.CashboxTransactionAdapter;
 import com.example.funkyeventapp.models.Cashbox;
 import com.example.funkyeventapp.models.CashboxTransaction;
-import com.example.funkyeventapp.models.BudgetCategory;
 import com.example.funkyeventapp.models.Currency;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.ExpensePurpose;
@@ -202,7 +201,10 @@ public class CashboxFragment extends Fragment {
         List<CashboxTransaction> transactions = repository.getCashboxTransactions(cashbox.getId());
         ((TextView) root.findViewById(R.id.textCashboxReceived)).setText(getString(R.string.received_value, money.format(repository.getCashboxTotal(cashbox.getId(), TransactionType.INCOME))));
         ((TextView) root.findViewById(R.id.textCashboxSpent)).setText(getString(R.string.spent_value, money.format(repository.getCashboxTotal(cashbox.getId(), TransactionType.EXPENSE))));
-        ((TextView) root.findViewById(R.id.textCashboxBalance)).setText(getString(R.string.balance_value, money.format(repository.getCashboxBalance(cashbox.getId()))));
+        BigDecimal balance = repository.getCashboxBalance(cashbox.getId());
+        TextView balanceView = root.findViewById(R.id.textCashboxBalance);
+        balanceView.setText(getString(R.string.balance_value, money.format(balance)));
+        balanceView.setTextColor(requireContext().getColor(balance.signum() < 0 ? R.color.funky_expense : R.color.funky_completed_text));
         ((TextView) root.findViewById(R.id.textCashboxEntriesTitle)).setText(getString(R.string.all_entries, transactions.size()));
         adapter.submitList(transactions);
     }
@@ -217,40 +219,32 @@ public class CashboxFragment extends Fragment {
         TextInputEditText rateInput = form.findViewById(R.id.inputEntryExchangeRate);
         TextInputEditText eurInput = form.findViewById(R.id.inputEntryEurAmount);
         TextInputEditText date = form.findViewById(R.id.inputEntryDate);
-        TextInputEditText name = form.findViewById(R.id.inputEntryName);
         TextInputEditText description = form.findViewById(R.id.inputEntryDescription);
         AutoCompleteTextView currency = form.findViewById(R.id.inputEntryCurrency);
         AutoCompleteTextView eventInput = form.findViewById(R.id.inputEntryEvent);
-        AutoCompleteTextView categoryInput = form.findViewById(R.id.inputEntryCategory);
         TransactionType[] selectedType = {existing == null ? TransactionType.INCOME : existing.getTransactionType()};
         LocalDate[] selectedDate = {existing == null ? LocalDate.now() : existing.getDate()};
         Currency[] currencies = Currency.values();
         currency.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, currencies));
+        currency.setOnClickListener(v -> currency.showDropDown());
         Currency initialCurrency = existing == null ? Currency.RSD : existing.getCurrency();
         currency.setText(initialCurrency.name(), false);
-        List<Event> assignedEvents = repository.getAssignedEventsForUser(cashbox.getUserId() == null ? "" : cashbox.getUserId());
+        List<Event> assignedEvents = repository.getAllEvents();
         List<String> eventLabels = new ArrayList<>();
         eventLabels.add(getString(R.string.general_expenses));
         for (Event event : assignedEvents) eventLabels.add(event.getName());
         eventInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, eventLabels));
+        eventInput.setOnClickListener(v -> eventInput.showDropDown());
         int selectedEventIndex = 0;
         if (existing != null && existing.getEventId() != null)
             for (int i = 0; i < assignedEvents.size(); i++) if (existing.getEventId().equals(assignedEvents.get(i).getId())) selectedEventIndex = i + 1;
         eventInput.setText(eventLabels.get(selectedEventIndex), false);
-        List<BudgetCategory> categories = repository.getBudgetCategories();
-        List<String> categoryLabels = new ArrayList<>();
-        for (BudgetCategory category : categories) categoryLabels.add(category.getName());
-        categoryInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, categoryLabels));
-        int categoryIndex = 0;
-        if (existing != null && existing.getCategoryId() != null)
-            for (int i = 0; i < categories.size(); i++) if (existing.getCategoryId().equals(categories.get(i).getId())) categoryIndex = i;
-        if (!categoryLabels.isEmpty()) categoryInput.setText(categoryLabels.get(categoryIndex), false);
         if (existing != null) {
             amount.setText(existing.getAmount().toPlainString());
             rateInput.setText(existing.getExchangeRate().toPlainString());
             eurInput.setText(existing.getAmountInEur().toPlainString());
-            name.setText(existing.getName());
-            description.setText(existing.getDescription());
+            description.setText(existing.getDescription() == null || existing.getDescription().trim().isEmpty()
+                    ? existing.getName() : existing.getDescription());
         } else {
             rateInput.setText(exchangeRate(initialCurrency).toPlainString());
         }
@@ -295,9 +289,9 @@ public class CashboxFragment extends Fragment {
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext()).setView(form).create();
         form.findViewById(R.id.buttonSaveCashboxEntry).setOnClickListener(v -> {
             try {
-                String entryName = text(name);
+                String entryDescription = text(description);
                 BigDecimal originalAmount = new BigDecimal(text(amount).replace(',', '.'));
-                if (entryName.isEmpty() || originalAmount.signum() <= 0) throw new NumberFormatException();
+                if (entryDescription.isEmpty() || originalAmount.signum() <= 0) throw new NumberFormatException();
                 Currency selectedCurrency = Currency.valueOf(currency.getText().toString());
                 BigDecimal rate = new BigDecimal(text(rateInput).replace(',', '.'));
                 if (rate.signum() <= 0) throw new NumberFormatException();
@@ -307,11 +301,10 @@ public class CashboxFragment extends Fragment {
                 int eventPosition = eventLabels.indexOf(eventInput.getText().toString());
                 Event selectedEvent = eventPosition > 0 ? assignedEvents.get(eventPosition - 1) : null;
                 if (selectedType[0] == TransactionType.EXPENSE && eventPosition < 0) throw new IllegalArgumentException();
-                CashboxTransaction saved = new CashboxTransaction(existing == null ? null : existing.getId(), cashbox.getId(), entryName, text(description), originalAmount,
+                CashboxTransaction saved = new CashboxTransaction(existing == null ? null : existing.getId(), cashbox.getId(), entryDescription, entryDescription, originalAmount,
                         selectedCurrency, rate, eur, selectedDate[0], selectedType[0], selectedEvent == null ? ExpensePurpose.GENERAL : ExpensePurpose.EVENT,
                         selectedEvent == null ? null : selectedEvent.getId(), existing == null ? null : existing.getReceiptId());
-                int selectedCategory = categoryLabels.indexOf(categoryInput.getText().toString());
-                if (selectedCategory >= 0) saved.setCategoryId(categories.get(selectedCategory).getId());
+                if (existing != null) saved.setCategoryId(existing.getCategoryId());
                 if (existing == null) repository.addCashboxTransaction(saved); else repository.updateCashboxTransaction(saved);
                 refreshCashbox();
                 dialog.dismiss();
@@ -333,8 +326,10 @@ public class CashboxFragment extends Fragment {
     private void styleTypeButtons(MaterialButton received, MaterialButton spent, boolean income) {
         received.setBackgroundTintList(requireContext().getColorStateList(income ? R.color.funky_completed : R.color.funky_surface));
         received.setStrokeColorResource(income ? R.color.funky_mint : R.color.funky_border);
-        spent.setBackgroundTintList(requireContext().getColorStateList(income ? R.color.funky_surface : R.color.funky_badge));
+        received.setTextColor(requireContext().getColor(income ? R.color.funky_completed_text : R.color.funky_text_secondary));
+        spent.setBackgroundTintList(requireContext().getColorStateList(income ? R.color.funky_surface : R.color.funky_expense_soft));
         spent.setStrokeColorResource(income ? R.color.funky_border : R.color.funky_expense);
+        spent.setTextColor(requireContext().getColor(income ? R.color.funky_text_secondary : R.color.funky_expense));
     }
 
     private BigDecimal exchangeRate(Currency currency) {
