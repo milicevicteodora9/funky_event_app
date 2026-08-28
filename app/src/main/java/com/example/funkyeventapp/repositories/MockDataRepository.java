@@ -238,6 +238,15 @@ public class MockDataRepository {
         return null;
     }
 
+    public Cashbox getOrCreateCashboxForUser(String userId) {
+        if (userId == null || userId.trim().isEmpty()) return null;
+        Cashbox existing = getCashboxForUser(userId);
+        if (existing != null) return existing;
+        Cashbox cashbox = new Cashbox("cashbox_" + userId, userId, Currency.EUR);
+        cashboxes.add(cashbox);
+        return cashbox;
+    }
+
     public List<CashboxTransaction> getCashboxTransactions(String cashboxId) {
         List<CashboxTransaction> result = new ArrayList<>();
         for (CashboxTransaction transaction : cashboxTransactions)

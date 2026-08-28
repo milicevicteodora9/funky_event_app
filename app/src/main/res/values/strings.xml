@@ -243,7 +243,13 @@
     <string name="password_minimum">Password must have at least 6 characters.</string>
     <string name="passwords_do_not_match">Passwords do not match.</string>
     <string name="account_created">Account created. You can now log in.</string>
-    <string name="mock_login_hint">Mock accounts use password: funky123</string>
+    <string name="mock_login_hint">Use your Funky Business account.</string>
+    <string name="invalid_email">Enter a valid email address.</string>
+    <string name="weak_password">Password is too weak. Use at least 6 characters.</string>
+    <string name="network_error">Network error. Check your connection and try again.</string>
+    <string name="missing_user_document">Your account profile was not found. Contact an administrator.</string>
+    <string name="authentication_error">Authentication failed. Please try again.</string>
+    <string name="profile_create_error">Account profile could not be created. Please try again.</string>
     <string name="all_cashboxes">All Cashboxes</string>
     <string name="company_unassigned">COMPANY (UNASSIGNED)</string>
     <string name="personal_cashboxes">PERSONAL CASHBOXES</string>

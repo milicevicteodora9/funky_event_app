@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "540309340235",
+    "project_id": "funkybusinessapp",
+    "storage_bucket": "funkybusinessapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540309340235:android:f303e2afe6486b00950dce",
+        "android_client_info": {
+          "package_name": "com.example.funkyeventapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIPCqr-OX9QGqBkdB7TaQ8nCwZP903Pzw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

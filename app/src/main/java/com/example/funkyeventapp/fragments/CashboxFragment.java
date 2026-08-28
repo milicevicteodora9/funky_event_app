@@ -100,10 +100,14 @@ public class CashboxFragment extends Fragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
         root = view;
+        view.findViewById(R.id.buttonLogout).setOnClickListener(v -> {
+            AuthService.getInstance().logout();
+            com.example.funkyeventapp.ui.AuthenticatedHeader.openLogin(v);
+        });
         User current = AuthService.getInstance().getCurrentUser();
         if (current == null) { com.example.funkyeventapp.ui.AuthenticatedHeader.openLogin(view); return; }
         String requestedCashboxId = getArguments() == null ? null : getArguments().getString("cashboxId");
-        cashbox = requestedCashboxId == null ? repository.getCashboxForUser(current.getId()) : repository.getCashboxById(requestedCashboxId);
+        cashbox = requestedCashboxId == null ? repository.getOrCreateCashboxForUser(current.getId()) : repository.getCashboxById(requestedCashboxId);
         boolean ownCashbox = cashbox != null && current.getId().equals(cashbox.getUserId());
         if (cashbox != null && !ownCashbox && !AuthorizationService.canAccessUserManagement(current)) {
             Toast.makeText(requireContext(), R.string.access_denied, Toast.LENGTH_SHORT).show();
@@ -115,13 +119,10 @@ public class CashboxFragment extends Fragment {
             return;
         }
         User owner = cashbox.getUserId() == null ? null : repository.getUserById(cashbox.getUserId());
-        String ownerName = owner == null ? getString(R.string.general_expenses) : owner.getFullName();
+        String ownerName = ownCashbox ? current.getFullName()
+                : owner == null ? getString(R.string.general_expenses) : owner.getFullName();
         ((TextView) view.findViewById(R.id.textCashboxOwner)).setText(getString(R.string.cashbox_owner,
                 ownerName, cashbox.getDisplayCurrency().name()));
-        view.findViewById(R.id.buttonLogout).setOnClickListener(v -> {
-            AuthService.getInstance().logout();
-            com.example.funkyeventapp.ui.AuthenticatedHeader.openLogin(v);
-        });
         adapter = new CashboxTransactionAdapter(new CashboxTransactionAdapter.Listener() {
             @Override public void onReceipt(CashboxTransaction item) { showReceiptDetails(item); }
             @Override public void onEdit(CashboxTransaction item) { showEntryDialog(item); }

@@ -1,49 +1,149 @@
 package com.example.funkyeventapp.services;
 
-import com.example.funkyeventapp.models.User;
-import com.example.funkyeventapp.repositories.MockDataRepository;
+import androidx.annotation.NonNull;
 
-import java.util.HashMap;
+import com.example.funkyeventapp.models.User;
+import com.example.funkyeventapp.models.UserRole;
+import com.example.funkyeventapp.repositories.UserRepository;
+import com.google.firebase.FirebaseNetworkException;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+
 import java.util.Locale;
-import java.util.Map;
 
 public final class AuthService {
-    public enum Result { SUCCESS, INVALID_CREDENTIALS, INACTIVE_USER, EMAIL_EXISTS }
+    public enum Result {
+        SUCCESS,
+        INVALID_CREDENTIALS,
+        INVALID_EMAIL,
+        INACTIVE_USER,
+        EMAIL_EXISTS,
+        WEAK_PASSWORD,
+        NETWORK_ERROR,
+        MISSING_USER_DOCUMENT,
+        UNKNOWN_ERROR
+    }
+
+    public interface Callback {
+        void onComplete(Result result, User user);
+    }
+
     private static final AuthService INSTANCE = new AuthService();
-    private final MockDataRepository repository = MockDataRepository.getInstance();
-    private final Map<String, String> mockPasswords = new HashMap<>();
+    private final FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+    private final UserRepository userRepository = UserRepository.getInstance();
     private User currentUser;
 
-    private AuthService() {
-        mockPasswords.put("teodora@funkybusiness.rs", "funky123");
-        mockPasswords.put("bojana@funkybusiness.rs", "funky123");
-        mockPasswords.put("nikola@funkybusiness.rs", "funky123");
-        mockPasswords.put("valentina@funkybusiness.rs", "funky123");
-        mockPasswords.put("vladica@funkybusiness.rs", "funky123");
-    }
+    private AuthService() { }
 
     public static AuthService getInstance() { return INSTANCE; }
     public User getCurrentUser() { return currentUser; }
     public boolean isAuthenticated() { return currentUser != null && currentUser.isActive(); }
+    public boolean hasFirebaseSession() { return firebaseAuth.getCurrentUser() != null; }
 
-    public Result login(String email, String password) {
-        String key = normalize(email);
-        User found = null;
-        for (User user : repository.getUsers()) if (key.equals(normalize(user.getEmail()))) { found = user; break; }
-        if (found == null || !password.equals(mockPasswords.get(key))) return Result.INVALID_CREDENTIALS;
-        if (!found.isActive()) return Result.INACTIVE_USER;
-        currentUser = found;
-        return Result.SUCCESS;
+    public void login(String email, String password, @NonNull Callback callback) {
+        firebaseAuth.signInWithEmailAndPassword(normalize(email), password)
+                .addOnSuccessListener(result -> loadAuthenticatedUser(callback))
+                .addOnFailureListener(error -> callback.onComplete(mapAuthError(error, true), null));
     }
 
-    public Result signUp(User user, String password) {
-        String key = normalize(user.getEmail());
-        if (repository.emailExists(key)) return Result.EMAIL_EXISTS;
-        repository.addUser(user);
-        mockPasswords.put(key, password);
-        return Result.SUCCESS;
+    public void restoreSession(@NonNull Callback callback) {
+        if (firebaseAuth.getCurrentUser() == null) {
+            callback.onComplete(Result.INVALID_CREDENTIALS, null);
+            return;
+        }
+        if (isAuthenticated()) {
+            callback.onComplete(Result.SUCCESS, currentUser);
+            return;
+        }
+        loadAuthenticatedUser(callback);
     }
 
-    public void logout() { currentUser = null; }
-    private String normalize(String value) { return value == null ? "" : value.trim().toLowerCase(Locale.ROOT); }
+    public void signUp(User user, String password, @NonNull Callback callback) {
+        firebaseAuth.createUserWithEmailAndPassword(normalize(user.getEmail()), password)
+                .addOnSuccessListener(result -> {
+                    FirebaseUser firebaseUser = result.getUser();
+                    if (firebaseUser == null) {
+                        logout();
+                        callback.onComplete(Result.UNKNOWN_ERROR, null);
+                        return;
+                    }
+                    User profile = new User(firebaseUser.getUid(), user.getFirstName(), user.getLastName(),
+                            normalize(user.getEmail()), UserRole.COORDINATOR, true);
+                    userRepository.createUser(profile, new UserRepository.Callback<Void>() {
+                        @Override public void onSuccess(Void unused) {
+                            logout();
+                            callback.onComplete(Result.SUCCESS, profile);
+                        }
+
+                        @Override public void onError(@NonNull Exception error) {
+                            // Avoid an Auth-only account that can never load a Firestore profile.
+                            firebaseUser.delete().addOnCompleteListener(task -> {
+                                logout();
+                                callback.onComplete(mapDataError(error), null);
+                            });
+                        }
+                    });
+                })
+                .addOnFailureListener(error -> callback.onComplete(mapAuthError(error, false), null));
+    }
+
+    public void logout() {
+        firebaseAuth.signOut();
+        currentUser = null;
+    }
+
+    private void loadAuthenticatedUser(@NonNull Callback callback) {
+        FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+        if (firebaseUser == null) {
+            currentUser = null;
+            callback.onComplete(Result.INVALID_CREDENTIALS, null);
+            return;
+        }
+        userRepository.getUserById(firebaseUser.getUid(), new UserRepository.Callback<User>() {
+            @Override public void onSuccess(User user) {
+                if (!user.isActive()) {
+                    logout();
+                    callback.onComplete(Result.INACTIVE_USER, null);
+                    return;
+                }
+                currentUser = user;
+                callback.onComplete(Result.SUCCESS, user);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                logout();
+                callback.onComplete(mapDataError(error), null);
+            }
+        });
+    }
+
+    private Result mapAuthError(Exception error, boolean signingIn) {
+        if (error instanceof FirebaseNetworkException) return Result.NETWORK_ERROR;
+        if (error instanceof FirebaseAuthUserCollisionException) return Result.EMAIL_EXISTS;
+        if (error instanceof FirebaseAuthWeakPasswordException) return Result.WEAK_PASSWORD;
+        if (error instanceof FirebaseAuthInvalidCredentialsException) {
+            return signingIn ? Result.INVALID_CREDENTIALS : Result.INVALID_EMAIL;
+        }
+        if (error instanceof FirebaseAuthInvalidUserException) return Result.INVALID_CREDENTIALS;
+        return Result.UNKNOWN_ERROR;
+    }
+
+    private Result mapDataError(Exception error) {
+        if (error instanceof UserRepository.UserNotFoundException) return Result.MISSING_USER_DOCUMENT;
+        if (error instanceof FirebaseNetworkException) return Result.NETWORK_ERROR;
+        if (error instanceof FirebaseFirestoreException
+                && ((FirebaseFirestoreException) error).getCode() == FirebaseFirestoreException.Code.UNAVAILABLE) {
+            return Result.NETWORK_ERROR;
+        }
+        return Result.UNKNOWN_ERROR;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
 }
