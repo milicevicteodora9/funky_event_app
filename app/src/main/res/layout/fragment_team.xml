@@ -12,10 +12,10 @@
         <ImageButton android:id="@+id/buttonAdmin" style="@style/HeaderIconButton" android:contentDescription="@string/user_management" android:src="@drawable/ic_admin" />
         <ImageButton android:id="@+id/buttonLogout" style="@style/HeaderIconButton" android:contentDescription="@string/logout" android:src="@drawable/ic_logout" />
     </LinearLayout>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="50dp" android:orientation="horizontal" android:paddingHorizontal="26dp" android:paddingVertical="4dp">
-        <com.google.android.material.button.MaterialButton android:id="@+id/buttonEvents" style="@style/MainNavButton" android:layout_weight="1" android:alpha="0.68" android:backgroundTint="@color/funky_green" android:text="@string/events" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/buttonClients" style="@style/MainNavButton" android:layout_marginStart="7dp" android:layout_weight="1" android:alpha="0.82" android:backgroundTint="@color/funky_pink" android:text="@string/clients" />
-        <com.google.android.material.button.MaterialButton android:id="@+id/buttonTeam" style="@style/MainNavButton" android:layout_marginStart="7dp" android:layout_weight="1" android:backgroundTint="@color/funky_purple" android:text="@string/team" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="50dp" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="24dp" android:paddingVertical="6dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonEvents" style="@style/MainNavButton" android:layout_weight="1" android:alpha="0.55" android:backgroundTint="@color/nav_events_tint" android:text="@string/events" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonClients" style="@style/MainNavButton" android:layout_marginStart="7dp" android:layout_weight="1" android:alpha="0.55" android:backgroundTint="@color/nav_clients_tint" android:text="@string/clients" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonTeam" style="@style/MainNavButton" android:layout_marginStart="7dp" android:layout_weight="1" android:backgroundTint="@color/nav_team_tint" android:text="@string/team" />
     </LinearLayout>
     <LinearLayout android:layout_width="match_parent" android:layout_height="52dp" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="16dp">
         <TextView android:id="@+id/textTeamTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textColor="@color/funky_text_secondary" android:textSize="17sp" android:textStyle="bold" tools:text="♙ TEAM (12)" />

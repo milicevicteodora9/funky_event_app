@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/funky_background" android:orientation="vertical">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="58dp"
+        android:gravity="center_vertical" android:paddingHorizontal="12dp">
+        <ImageButton android:id="@+id/buttonAddEventBack" style="@style/HeaderIconButton"
+            android:contentDescription="@string/back" android:src="@drawable/ic_back" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginStart="10dp" android:layout_weight="1"
+            android:text="@string/new_event" android:textColor="@color/funky_text"
+            android:textSize="20sp" android:textStyle="bold" />
+    </LinearLayout>
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/funky_border" />
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:clipToPadding="false" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingHorizontal="16dp" android:paddingTop="14dp" android:paddingBottom="24dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="94dp" android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton android:id="@+id/buttonNewEventTypeEvent"
+                    style="@style/NewEventTypeButton" android:layout_weight="1"
+                    android:text="📅\nEvent\nPick dates" />
+                <com.google.android.material.button.MaterialButton android:id="@+id/buttonNewEventTypeCampaign"
+                    style="@style/NewEventTypeButton" android:layout_marginStart="10dp" android:layout_weight="1"
+                    android:text="Campaign\nMultiple activations" />
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput"
+                android:layout_marginTop="14dp" android:hint="@string/event_name">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventName"
+                    android:layout_width="match_parent" android:layout_height="56dp" android:maxLines="1"
+                    android:inputType="textCapSentences" android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="14dp" android:layout_marginBottom="7dp"
+                android:text="@string/dates_schedule" android:textColor="@color/funky_text"
+                android:textSize="14sp" android:textStyle="bold" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput"
+                    android:layout_width="0dp" android:layout_weight="1" android:hint="@string/start_date"
+                    app:endIconDrawable="@drawable/ic_calendar" app:endIconMode="custom">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventStartDate"
+                        android:layout_width="match_parent" android:layout_height="58dp" android:focusable="false"
+                        android:inputType="none" android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput"
+                    android:layout_width="0dp" android:layout_marginStart="9dp" android:layout_weight="1"
+                    android:hint="@string/end_date" app:endIconDrawable="@drawable/ic_calendar" app:endIconMode="custom">
+                    <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventEndDate"
+                        android:layout_width="match_parent" android:layout_height="58dp" android:focusable="false"
+                        android:inputType="none" android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput" android:layout_marginTop="10dp" android:hint="@string/location">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventLocation" android:layout_width="match_parent" android:layout_height="56dp" android:maxLines="1" android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput" android:layout_marginTop="10dp" android:hint="@string/client" app:endIconMode="dropdown_menu">
+                <AutoCompleteTextView android:id="@+id/inputNewEventClient" android:layout_width="match_parent" android:layout_height="58dp" android:clickable="true" android:cursorVisible="false" android:focusable="false" android:inputType="none" android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput" android:layout_marginTop="10dp" android:hint="@string/billing_entity">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventBillingEntity" android:layout_width="match_parent" android:layout_height="56dp" android:maxLines="1" android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput" android:layout_marginTop="10dp" android:hint="@string/po_number">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventPoNumber" android:layout_width="match_parent" android:layout_height="56dp" android:maxLines="1" android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput" android:layout_marginTop="10dp" android:hint="@string/payment_terms">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventPaymentTerms" android:layout_width="match_parent" android:layout_height="56dp" android:maxLines="1" android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout style="@style/NewEventInput" android:layout_marginTop="10dp" android:hint="@string/notes_optional">
+                <com.google.android.material.textfield.TextInputEditText android:id="@+id/inputNewEventNotes" android:layout_width="match_parent" android:layout_height="92dp" android:gravity="top" android:inputType="textCapSentences|textMultiLine" android:paddingTop="14dp" android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton android:id="@+id/buttonSaveNewEvent"
+                android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="16dp"
+                android:backgroundTint="@color/funky_mint" android:text="@string/save" android:textAllCaps="false"
+                android:textColor="@color/white" android:textSize="15sp" android:textStyle="bold"
+                app:cornerRadius="20dp" android:insetTop="0dp" android:insetBottom="0dp" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

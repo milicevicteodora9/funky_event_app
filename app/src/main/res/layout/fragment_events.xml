@@ -61,27 +61,30 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:orientation="horizontal"
-        android:paddingHorizontal="26dp"
-        android:paddingVertical="4dp">
+        android:gravity="center_vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="6dp">
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonEvents"
             style="@style/MainNavButton"
             android:layout_weight="1"
-            android:backgroundTint="@color/funky_green"
+            android:backgroundTint="@color/nav_events_tint"
             android:text="@string/events" />
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonClients"
+            android:alpha="0.55"
             style="@style/MainNavButton"
             android:layout_marginStart="7dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/funky_pink"
+            android:backgroundTint="@color/nav_clients_tint"
             android:text="@string/clients" />
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonTeam"
+            android:alpha="0.55"
             style="@style/MainNavButton"
             android:layout_marginStart="7dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/funky_purple"
+            android:backgroundTint="@color/nav_team_tint"
             android:text="@string/team" />
     </LinearLayout>
 

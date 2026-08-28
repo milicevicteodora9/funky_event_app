@@ -67,7 +67,7 @@ public class MockDataRepository {
     public static MockDataRepository getInstance() { return INSTANCE; }
 
     private void seedClients() {
-        clients.add(new Client("client_expo", "EXPO", "", "109998877", "Bulevar umetnosti 4, Beograd", "office@expo.rs", "+381 11 555 0101", "Ana Jovanović"));
+        clients.add(new Client("client_beo_shopping_center", "BEO Shopping Center", "", "109998877", "Vojislava Ilića 141, Beograd", "office@beoshoppingcenter.rs", "+381 11 555 0101", "Ana Jovanović"));
         clients.add(new Client("client_addiko", "Addiko Bank", "", "100000123", "Bulevar Mihajla Pupina 6, Beograd", "neda.bogunovic@addiko.com", "+381 11 222 6000", "Neda Bogunović"));
         clients.add(new Client("client_tiger", "Flying Tiger Copenhagen", "", "112233445", "Galerija, Beograd", "store.rs@flyingtiger.com", "+381 11 400 2200", "Maja Ilić"));
         clients.add(new Client("client_intesa", "Banca Intesa", "", "100001159", "Milentija Popovića 7b, Beograd", "marketing@bancaintesa.rs", "+381 11 201 1200", "Marko Petrović"));
@@ -84,7 +84,7 @@ public class MockDataRepository {
     private void seedEvents() {
         events.add(event("1", "Addiko Banka - Branding", EventType.CAMPAIGN, LocalDate.of(2026, 8, 20), LocalDate.of(2026, 8, 27), "Beograd", "client_addiko", "Addiko Bank a.d. Beograd", "PO-ADD-2026-081", "50% avansno, 50% nakon događaja", "Branding kampanja.", false));
         events.add(event("2", "Flying Tiger Store Opening", EventType.EVENT, LocalDate.of(2026, 9, 3), null, "Galerija, Beograd", "client_tiger", "Tiger Retail Serbia d.o.o.", "FT-OPEN-0903", "Plaćanje 15 dana nakon realizacije", "Otvaranje nove prodavnice.", false));
-        events.add(event("3", "Funky Summer Activation", EventType.EVENT, LocalDate.of(2026, 9, 12), LocalDate.of(2026, 9, 13), "Novi Sad", "client_expo", "EXPO 2027 d.o.o.", "EXPO-SA-1209", "30 dana", "Letnja aktivacija.", false));
+        events.add(event("3", "BEO Summer Activation", EventType.EVENT, LocalDate.of(2026, 9, 12), LocalDate.of(2026, 9, 13), "BEO Shopping Center, Beograd", "client_beo_shopping_center", "BEO Shopping Center d.o.o.", "BEO-SA-1209", "30 dana", "Letnja aktivacija u BEO Shopping Center-u.", false));
         events.add(event("4", "Addiko Bank Promo Weekend", EventType.CAMPAIGN, LocalDate.of(2026, 7, 5), LocalDate.of(2026, 7, 6), "Niš", "client_addiko", "Addiko Bank a.d. Beograd", "PO-ADD-2026-055", "30 dana", "Završena kampanja.", true));
         events.add(event("5", "Flying Tiger Spring Launch", EventType.EVENT, LocalDate.of(2026, 5, 18), null, "Beograd", "client_tiger", "Tiger Retail Serbia d.o.o.", "FT-SPRING-0518", "15 dana", "Završeno prolećno lansiranje.", true));
     }
@@ -150,7 +150,7 @@ public class MockDataRepository {
         invoices.add(invoice("inv_2", "4", "client_addiko", "FB-2026-056", "2026-07-07", "2026-08-06", "3150.00", "EUR", InvoiceStatus.PAID, "Promo weekend final invoice."));
         invoices.add(invoice("inv_3", "2", "client_tiger", "FB-2026-090", "2026-08-15", "2026-09-18", "5800.00", "EUR", InvoiceStatus.DRAFT, "Store opening production."));
         invoices.add(invoice("inv_4", "5", "client_tiger", "FB-2026-041", "2026-05-20", "2026-06-04", "2750.00", "EUR", InvoiceStatus.PAID, "Spring launch."));
-        invoices.add(invoice("inv_5", "3", "client_expo", "FB-2026-094", "2026-08-18", "2026-09-17", "7600.00", "EUR", InvoiceStatus.ISSUED, "Summer activation advance."));
+        invoices.add(invoice("inv_5", "3", "client_beo_shopping_center", "FB-2026-094", "2026-08-18", "2026-09-17", "7600.00", "EUR", InvoiceStatus.ISSUED, "BEO Summer Activation advance."));
     }
 
     private Invoice invoice(String id, String eventId, String clientId, String number,
@@ -182,6 +182,13 @@ public class MockDataRepository {
 
     public List<Event> getAllEvents() { return new ArrayList<>(events); }
 
+    public Event addEvent(Event event) {
+        if (event.getId() == null || event.getId().trim().isEmpty()) event.setId(nextId("event"));
+        events.add(event);
+        budgets.add(new Budget("budget_" + event.getId(), event.getId(), false, BigDecimal.ZERO));
+        return event;
+    }
+
     private void seedTeam() {
         teamMembers.add(member("tm_1", "Aleksandar Lazić", "+381 63 223960", "aleksandar@email.rs", "Beograd", "265-000000648353-89"));
         teamMembers.add(member("tm_2", "Aleksandra Facepaint", "+381 64 112233", "facepaint@email.rs", "Beograd", ""));
@@ -196,7 +203,7 @@ public class MockDataRepository {
         teamMembers.add(member("tm_11", "Miloš Stanković", "+381 64 776655", "milos@email.rs", "Pančevo", ""));
         teamMembers.add(member("tm_12", "Sara Jovanović", "+381 62 445566", "sara@email.rs", "Beograd", ""));
         teamFees.add(fee("tf_1", "tm_1", "1", "Moderator oba dana", "1600"));
-        teamFees.add(fee("tf_2", "tm_1", "3", "EXPO karavan", "800"));
+        teamFees.add(fee("tf_2", "tm_1", "3", "BEO Shopping Center aktivacija", "800"));
         teamFees.add(fee("tf_3", "tm_1", "4", "Glumac i kviz", "800"));
         teamPayments.add(payment("tp_1", "tm_1", "800")); teamPayments.add(payment("tp_2", "tm_1", "400")); teamPayments.add(payment("tp_3", "tm_1", "400"));
         teamFees.add(fee("tf_4", "tm_5", "3", "Hostesa", "520")); teamPayments.add(payment("tp_4", "tm_5", "400"));
