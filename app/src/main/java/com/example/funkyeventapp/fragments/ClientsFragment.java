@@ -1,17 +1,12 @@
 package com.example.funkyeventapp.fragments;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -28,6 +23,7 @@ import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.ui.AuthenticatedHeader;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -42,37 +38,20 @@ public class ClientsFragment extends Fragment {
     private final MockDataRepository mockRepository = MockDataRepository.getInstance();
     private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private TextView invoicedLabel, invoicedValue, actualLabel, actualValue;
-    private ActivityResultLauncher<String[]> clientLogoPicker;
-    private Uri selectedClientLogoUri;
-    private ImageView clientLogoPreview;
-    private TextView clientLogoPlaceholder, clientLogoSelection;
+    private TextView clientsTitle;
+    private ClientAdapter adapter;
 
     public ClientsFragment() { super(R.layout.fragment_clients); }
-
-    @Override public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        clientLogoPicker = registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
-            if (uri == null || clientLogoPreview == null) return;
-            try {
-                requireContext().getContentResolver().takePersistableUriPermission(
-                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            } catch (SecurityException ignored) { }
-            selectedClientLogoUri = uri;
-            clientLogoPreview.setPadding(0, 0, 0, 0);
-            clientLogoPreview.setImageURI(uri);
-            clientLogoPlaceholder.setVisibility(View.GONE);
-            clientLogoSelection.setText(R.string.logo_selected);
-        });
-    }
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (!AuthenticatedHeader.bind(this, view)) return;
-        ClientAdapter adapter = new ClientAdapter(client -> {
+        clientsTitle = view.findViewById(R.id.textClientsTitle);
+        adapter = new ClientAdapter(client -> {
             Bundle arguments = new Bundle();
             arguments.putString("clientId", client.getId());
             Navigation.findNavController(view).navigate(R.id.action_clientsFragment_to_clientDetailsFragment, arguments);
-        });
+        }, client -> showClientDialog(view, client));
         RecyclerView clientsList = view.findViewById(R.id.recyclerClients);
         clientsList.setLayoutManager(new LinearLayoutManager(requireContext()));
         clientsList.setAdapter(adapter);
@@ -84,11 +63,10 @@ public class ClientsFragment extends Fragment {
         actualValue = view.findViewById(R.id.textActualValue);
         bindFinancialOverview();
 
-        TextView clientsTitle = view.findViewById(R.id.textClientsTitle);
         clientsTitle.setText(getString(R.string.clients_count, 0));
         loadClients(view, adapter, clientsTitle);
         view.findViewById(R.id.buttonAddClient).setOnClickListener(v ->
-                showAddClientDialog(view, adapter, clientsTitle));
+                showClientDialog(view, null));
         view.findViewById(R.id.buttonEvents).setOnClickListener(this::returnToEvents);
         view.findViewById(R.id.buttonCashbox).setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_clientsFragment_to_cashboxFragment));
@@ -121,7 +99,7 @@ public class ClientsFragment extends Fragment {
         });
     }
 
-    private void showAddClientDialog(View root, ClientAdapter adapter, TextView clientsTitle) {
+    private void showClientDialog(View root, @Nullable Client existing) {
         View content = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_add_client, null);
         TextInputEditText name = content.findViewById(R.id.inputClientName);
@@ -130,14 +108,16 @@ public class ClientsFragment extends Fragment {
         TextInputEditText email = content.findViewById(R.id.inputClientEmail);
         TextInputEditText phone = content.findViewById(R.id.inputClientPhone);
         TextInputEditText contactPerson = content.findViewById(R.id.inputClientContactPerson);
-        selectedClientLogoUri = null;
-        clientLogoPreview = content.findViewById(R.id.imageClientLogoPreview);
-        clientLogoPlaceholder = content.findViewById(R.id.textClientLogoPlaceholder);
-        clientLogoSelection = content.findViewById(R.id.textClientLogoSelection);
-        content.findViewById(R.id.buttonChooseClientLogo).setOnClickListener(v ->
-                clientLogoPicker.launch(new String[]{"image/png", "image/jpeg", "image/webp"}));
+        if (existing != null) {
+            name.setText(existing.getName());
+            taxId.setText(existing.getTaxId());
+            address.setText(existing.getAddress());
+            email.setText(existing.getEmail());
+            phone.setText(existing.getPhone());
+            contactPerson.setText(existing.getContactPerson());
+        }
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.new_client)
+                .setTitle(existing == null ? R.string.new_client : R.string.edit_client)
                 .setView(content)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.save, null)
@@ -155,31 +135,31 @@ public class ClientsFragment extends Fragment {
                         name.setError(getString(R.string.client_name_required));
                         return;
                     }
-                    Client client = new Client(null, clientName, "", value(taxId),
+                    Client client = new Client(existing == null ? null : existing.getId(), clientName,
+                            existing == null ? "" : existing.getLogoUri(), value(taxId),
                             value(address), value(email), value(phone), value(contactPerson));
                     View saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
                     saveButton.setEnabled(false);
-                    clientRepository.createClient(client, selectedClientLogoUri)
+                    Task<Void> saveTask = existing == null
+                            ? clientRepository.createClient(client)
+                            : clientRepository.updateClient(client);
+                    saveTask
                             .addOnSuccessListener(unused -> {
                                 if (!isAdded() || getView() != root) return;
                                 dialog.dismiss();
-                                Toast.makeText(requireContext(), R.string.client_saved,
+                                Toast.makeText(requireContext(), existing == null
+                                                ? R.string.client_saved : R.string.client_updated,
                                         Toast.LENGTH_SHORT).show();
                                 loadClients(root, adapter, clientsTitle);
                             })
                             .addOnFailureListener(error -> {
                                 if (!isAdded() || getView() != root) return;
                                 saveButton.setEnabled(true);
-                                Toast.makeText(requireContext(), R.string.client_save_error,
+                                Toast.makeText(requireContext(), existing == null
+                                                ? R.string.client_save_error : R.string.client_update_error,
                                         Toast.LENGTH_SHORT).show();
                             });
                 });
-        });
-        dialog.setOnDismissListener(ignored -> {
-            selectedClientLogoUri = null;
-            clientLogoPreview = null;
-            clientLogoPlaceholder = null;
-            clientLogoSelection = null;
         });
         dialog.show();
     }

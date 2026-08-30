@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:clipToPadding="false"
@@ -11,101 +10,12 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="20dp"
-        android:paddingTop="8dp"
+        android:paddingTop="6dp"
         android:paddingBottom="10dp">
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="112dp"
-            app:cardBackgroundColor="@color/funky_badge"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/funky_border"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="14dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="82dp"
-                    android:layout_height="82dp"
-                    app:cardBackgroundColor="@color/funky_surface"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/funky_border"
-                    app:strokeWidth="1dp">
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-                        <ImageView
-                            android:id="@+id/imageClientLogoPreview"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:contentDescription="@string/client_logo"
-                            android:padding="8dp"
-                            android:scaleType="centerCrop" />
-                        <TextView
-                            android:id="@+id/textClientLogoPlaceholder"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:text="@string/logo"
-                            android:textColor="@color/funky_text_secondary"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </FrameLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/client_logo"
-                        android:textColor="@color/funky_text"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                    <TextView
-                        android:id="@+id/textClientLogoSelection"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="@string/logo_optional"
-                        android:textColor="@color/funky_text_secondary"
-                        android:textSize="12sp" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonChooseClientLogo"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="wrap_content"
-                        android:layout_height="38dp"
-                        android:layout_marginTop="7dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:minWidth="0dp"
-                        android:paddingHorizontal="13dp"
-                        android:text="@string/choose_logo"
-                        android:textAllCaps="false"
-                        android:textColor="@color/funky_text"
-                        app:cornerRadius="13dp"
-                        app:strokeColor="@color/funky_border" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
             android:layout_marginBottom="8dp"
             android:text="@string/company_details"
             android:textColor="@color/funky_text"

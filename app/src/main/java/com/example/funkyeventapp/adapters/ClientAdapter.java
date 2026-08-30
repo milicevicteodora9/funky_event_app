@@ -1,9 +1,9 @@
 package com.example.funkyeventapp.adapters;
 
-import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -12,18 +12,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.Client;
-import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientViewHolder> {
     public interface OnClientClickListener { void onClientClick(Client client); }
+    public interface OnClientEditListener { void onClientEdit(Client client); }
 
     private final List<Client> clients = new ArrayList<>();
     private final OnClientClickListener listener;
+    private final OnClientEditListener editListener;
 
-    public ClientAdapter(OnClientClickListener listener) { this.listener = listener; }
+    public ClientAdapter(OnClientClickListener listener, OnClientEditListener editListener) {
+        this.listener = listener;
+        this.editListener = editListener;
+    }
 
     public void submitList(List<Client> newClients) {
         clients.clear();
@@ -42,6 +46,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     class ClientViewHolder extends RecyclerView.ViewHolder {
         private final ImageView logo;
         private final TextView initial, name, contact, email, phone;
+        private final ImageButton edit;
 
         ClientViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -51,6 +56,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             contact = itemView.findViewById(R.id.textContactPerson);
             email = itemView.findViewById(R.id.textClientEmail);
             phone = itemView.findViewById(R.id.textClientPhone);
+            edit = itemView.findViewById(R.id.buttonEditClient);
         }
 
         void bind(Client client) {
@@ -58,38 +64,12 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             contact.setText(client.getContactPerson());
             email.setText(client.getEmail());
             phone.setText(client.getPhone());
-            String clientName = client.getName();
-            initial.setText(clientName == null || clientName.isEmpty() ? "?" : clientName.substring(0, 1));
-            bindLogo(client.getLogoUri());
-            itemView.setOnClickListener(v -> listener.onClientClick(client));
-        }
-
-        private void bindLogo(String logoUri) {
-            logo.setTag(logoUri);
-            logo.setImageDrawable(null);
-            if (logoUri == null || logoUri.trim().isEmpty()) {
-                showInitial(logoUri);
-                return;
-            }
-            logo.setVisibility(View.VISIBLE);
-            initial.setVisibility(View.GONE);
-            try {
-                FirebaseStorage.getInstance().getReferenceFromUrl(logoUri)
-                        .getBytes(5L * 1024L * 1024L)
-                        .addOnSuccessListener(bytes -> {
-                            if (!logoUri.equals(logo.getTag())) return;
-                            logo.setImageBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length));
-                        })
-                        .addOnFailureListener(error -> showInitial(logoUri));
-            } catch (IllegalArgumentException error) {
-                showInitial(logoUri);
-            }
-        }
-
-        private void showInitial(String expectedLogoUri) {
-            if (expectedLogoUri != null && !expectedLogoUri.equals(logo.getTag())) return;
             logo.setVisibility(View.GONE);
             initial.setVisibility(View.VISIBLE);
+            String clientName = client.getName();
+            initial.setText(clientName == null || clientName.isEmpty() ? "?" : clientName.substring(0, 1));
+            itemView.setOnClickListener(v -> listener.onClientClick(client));
+            edit.setOnClickListener(v -> editListener.onClientEdit(client));
         }
     }
 }

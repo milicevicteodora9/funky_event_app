@@ -91,6 +91,17 @@
                 tools:text="+381 11 222 6000" />
         </LinearLayout>
 
+        <ImageButton
+            android:id="@+id/buttonEditClient"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/edit"
+            android:padding="9dp"
+            android:src="@drawable/ic_edit"
+            app:tint="@color/funky_text_secondary" />
+
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"

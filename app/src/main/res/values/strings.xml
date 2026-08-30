@@ -101,10 +101,9 @@
     <string name="contact_person">Contact person</string>
     <string name="client_saved">Client added</string>
     <string name="client_save_error">Failed to save client.</string>
-    <string name="logo">LOGO</string>
-    <string name="logo_optional">Optional · PNG, JPG or WebP</string>
-    <string name="choose_logo">Choose image</string>
-    <string name="logo_selected">Logo selected</string>
+    <string name="edit_client">Edit client</string>
+    <string name="client_updated">Client updated</string>
+    <string name="client_update_error">Failed to update client.</string>
     <string name="company_details">Company details</string>
     <string name="contact_details">Contact details</string>
     <string name="client_details_coming">Client details coming next</string>
