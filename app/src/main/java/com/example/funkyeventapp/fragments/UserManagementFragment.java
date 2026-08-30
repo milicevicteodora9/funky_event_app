@@ -38,7 +38,20 @@ public class UserManagementFragment extends Fragment {
             return;
         }
         adapter = new UserManagementAdapter(current.getId(), new UserManagementAdapter.Listener() {
-            @Override public void onRoleChanged(User user, UserRole role) { }
+            @Override public void onRoleChanged(User user, UserRole role) {
+                if (user.getRole() == role) return;
+                repository.updateUserRole(user.getId(), role)
+                        .addOnSuccessListener(unused -> {
+                            user.setRole(role);
+                            if (adapter != null) adapter.notifyDataSetChanged();
+                        })
+                        .addOnFailureListener(error -> {
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(), R.string.user_role_update_error,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            }
             @Override public void onActiveChanged(User user) { }
         });
         RecyclerView recycler = view.findViewById(R.id.recyclerUsers);

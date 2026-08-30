@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.models.UserRole;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -65,6 +66,11 @@ public final class UserRepository {
                     }
                 })
                 .addOnFailureListener(callback::onError);
+    }
+
+    public Task<Void> updateUserRole(@NonNull String uid, @NonNull UserRole role) {
+        return firestore.collection("users").document(uid)
+                .update("role", role.name());
     }
 
     private void mapUser(String uid, DocumentSnapshot document, Callback<User> callback) {
