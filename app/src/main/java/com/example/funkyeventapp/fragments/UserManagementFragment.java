@@ -52,7 +52,20 @@ public class UserManagementFragment extends Fragment {
                             }
                         });
             }
-            @Override public void onActiveChanged(User user) { }
+            @Override public void onActiveChanged(User user) {
+                boolean active = !user.isActive();
+                repository.updateUserActive(user.getId(), active)
+                        .addOnSuccessListener(unused -> {
+                            user.setActive(active);
+                            if (adapter != null) adapter.notifyDataSetChanged();
+                        })
+                        .addOnFailureListener(error -> {
+                            if (isAdded()) {
+                                Toast.makeText(requireContext(), R.string.user_active_update_error,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
+            }
         });
         RecyclerView recycler = view.findViewById(R.id.recyclerUsers);
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));

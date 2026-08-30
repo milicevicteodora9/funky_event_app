@@ -73,6 +73,11 @@ public final class UserRepository {
                 .update("role", role.name());
     }
 
+    public Task<Void> updateUserActive(@NonNull String uid, boolean active) {
+        return firestore.collection("users").document(uid)
+                .update("active", active);
+    }
+
     private void mapUser(String uid, DocumentSnapshot document, Callback<User> callback) {
         if (!document.exists()) {
             callback.onError(new UserNotFoundException(uid));
