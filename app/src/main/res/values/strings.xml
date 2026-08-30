@@ -219,6 +219,7 @@
     <string name="deactivate_user_question">Deactivate this user?</string>
     <string name="admin_required">At least one active Admin is required.</string>
     <string name="access_denied">You do not have access to User Management.</string>
+    <string name="users_load_error">Failed to load users.</string>
     <string name="first_name_required">First name *</string>
     <string name="last_name_required">Last name *</string>
     <string name="email_required">Email *</string>

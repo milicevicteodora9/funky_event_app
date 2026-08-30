@@ -7,7 +7,9 @@ import com.example.funkyeventapp.models.UserRole;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Firestore access for the authenticated user's profile only. */
@@ -49,23 +51,43 @@ public final class UserRepository {
                 .addOnFailureListener(callback::onError);
     }
 
+    public void getAllUsers(@NonNull Callback<List<User>> callback) {
+        firestore.collection("users").get()
+                .addOnSuccessListener(snapshot -> {
+                    try {
+                        List<User> users = new ArrayList<>();
+                        for (DocumentSnapshot document : snapshot.getDocuments()) {
+                            users.add(mapUser(document.getId(), document));
+                        }
+                        callback.onSuccess(users);
+                    } catch (IllegalArgumentException | IllegalStateException error) {
+                        callback.onError(error);
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
     private void mapUser(String uid, DocumentSnapshot document, Callback<User> callback) {
         if (!document.exists()) {
             callback.onError(new UserNotFoundException(uid));
             return;
         }
         try {
-            String firstName = requiredString(document, "firstName");
-            String lastName = requiredString(document, "lastName");
-            String email = requiredString(document, "email");
-            String roleValue = requiredString(document, "role");
-            Boolean active = document.getBoolean("active");
-            if (active == null) throw new IllegalStateException("Missing active field");
-            callback.onSuccess(new User(uid, firstName, lastName, email,
-                    UserRole.valueOf(roleValue), active));
+            callback.onSuccess(mapUser(uid, document));
         } catch (IllegalArgumentException | IllegalStateException error) {
             callback.onError(error);
         }
+    }
+
+    private User mapUser(String uid, DocumentSnapshot document) {
+        String firstName = requiredString(document, "firstName");
+        String lastName = requiredString(document, "lastName");
+        String email = requiredString(document, "email");
+        String roleValue = requiredString(document, "role");
+        Boolean active = document.getBoolean("active");
+        if (active == null) throw new IllegalStateException("Missing active field");
+        return new User(uid, firstName, lastName, email,
+                UserRole.valueOf(roleValue), active);
     }
 
     private String requiredString(DocumentSnapshot document, String field) {
