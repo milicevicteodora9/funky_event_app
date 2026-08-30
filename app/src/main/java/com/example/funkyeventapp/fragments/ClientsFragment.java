@@ -16,16 +16,20 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.ClientAdapter;
 import com.example.funkyeventapp.models.BudgetType;
+import com.example.funkyeventapp.models.Client;
+import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.ui.AuthenticatedHeader;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.List;
 import java.util.Locale;
 
 public class ClientsFragment extends Fragment {
-    private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final ClientRepository clientRepository = ClientRepository.getInstance();
+    private final MockDataRepository mockRepository = MockDataRepository.getInstance();
     private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private TextView invoicedLabel, invoicedValue, actualLabel, actualValue;
 
@@ -43,7 +47,6 @@ public class ClientsFragment extends Fragment {
         clientsList.setLayoutManager(new LinearLayoutManager(requireContext()));
         clientsList.setAdapter(adapter);
         clientsList.setHasFixedSize(true);
-        adapter.submitList(repository.getClients());
 
         invoicedLabel = view.findViewById(R.id.textInvoicedLabel);
         invoicedValue = view.findViewById(R.id.textInvoicedValue);
@@ -51,8 +54,21 @@ public class ClientsFragment extends Fragment {
         actualValue = view.findViewById(R.id.textActualValue);
         bindFinancialOverview();
 
-        ((TextView) view.findViewById(R.id.textClientsTitle)).setText(
-                getString(R.string.clients_count, repository.getClients().size()));
+        TextView clientsTitle = view.findViewById(R.id.textClientsTitle);
+        clientsTitle.setText(getString(R.string.clients_count, 0));
+        clientRepository.getAllClients(new ClientRepository.Callback<List<Client>>() {
+            @Override public void onSuccess(List<Client> clients) {
+                if (!isAdded() || getView() != view) return;
+                adapter.submitList(clients);
+                clientsTitle.setText(getString(R.string.clients_count, clients.size()));
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != view) return;
+                Toast.makeText(requireContext(), R.string.clients_load_error,
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
         view.findViewById(R.id.buttonAddClient).setOnClickListener(v ->
                 Toast.makeText(requireContext(), R.string.add_client_coming, Toast.LENGTH_SHORT).show());
         view.findViewById(R.id.buttonEvents).setOnClickListener(this::returnToEvents);
@@ -74,8 +90,8 @@ public class ClientsFragment extends Fragment {
     private void bindFinancialOverview() {
         invoicedLabel.setText(R.string.clients_total_external);
         actualLabel.setText(R.string.clients_actual_profit);
-        BigDecimal external = repository.getTotalForAllBudgets(BudgetType.EXTERNAL);
-        BigDecimal actual = repository.getTotalForAllBudgets(BudgetType.ACTUAL);
+        BigDecimal external = mockRepository.getTotalForAllBudgets(BudgetType.EXTERNAL);
+        BigDecimal actual = mockRepository.getTotalForAllBudgets(BudgetType.ACTUAL);
         invoicedValue.setText(moneyFormat.format(external) + " EUR");
         actualValue.setText(moneyFormat.format(external.subtract(actual)) + " EUR");
     }
