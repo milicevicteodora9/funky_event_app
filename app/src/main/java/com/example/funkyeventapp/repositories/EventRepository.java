@@ -5,7 +5,9 @@ import androidx.annotation.NonNull;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.EventType;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -15,8 +17,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /** Firestore access for events. */
 public final class EventRepository {
@@ -32,6 +36,25 @@ public final class EventRepository {
 
     public static EventRepository getInstance() { return INSTANCE; }
 
+    public Task<Void> createEvent(@NonNull Event event) {
+        DocumentReference document = firestore.collection("events").document();
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", event.getName());
+        data.put("type", event.getType().name());
+        data.put("startDate", toTimestamp(event.getStartDate()));
+        data.put("endDate", event.getEndDate() == null ? null : toTimestamp(event.getEndDate()));
+        data.put("location", event.getLocation());
+        data.put("status", event.getStatus().name());
+        data.put("clientId", event.getClientId());
+        data.put("billingEntity", event.getBillingEntity());
+        data.put("poNumber", event.getPoNumber());
+        data.put("paymentTerms", event.getPaymentTerms());
+        data.put("notes", event.getNotes());
+        data.put("completed", event.isCompleted());
+        return document.set(data)
+                .addOnSuccessListener(unused -> event.setId(document.getId()));
+    }
+
     public void getAllEvents(@NonNull Callback<List<Event>> callback) {
         firestore.collection("events").get()
                 .addOnSuccessListener(snapshot -> {
@@ -41,6 +64,22 @@ public final class EventRepository {
                             events.add(mapEvent(document));
                         }
                         callback.onSuccess(events);
+                    } catch (IllegalArgumentException | IllegalStateException error) {
+                        callback.onError(error);
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void getEventById(@NonNull String eventId, @NonNull Callback<Event> callback) {
+        firestore.collection("events").document(eventId).get()
+                .addOnSuccessListener(document -> {
+                    if (!document.exists()) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+                    try {
+                        callback.onSuccess(mapEvent(document));
                     } catch (IllegalArgumentException | IllegalStateException error) {
                         callback.onError(error);
                     }
@@ -98,6 +137,10 @@ public final class EventRepository {
 
     private LocalDate toLocalDate(Date date) {
         return Instant.ofEpochMilli(date.getTime()).atZone(ZoneOffset.UTC).toLocalDate();
+    }
+
+    private Timestamp toTimestamp(LocalDate date) {
+        return new Timestamp(Date.from(date.atStartOfDay(ZoneOffset.UTC).toInstant()));
     }
 
     private String requiredString(DocumentSnapshot document, String field) {

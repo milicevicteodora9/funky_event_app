@@ -15,6 +15,7 @@ import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.EventType;
+import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -24,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AddEventFragment extends Fragment {
-    private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final EventRepository eventRepository = EventRepository.getInstance();
+    private final MockDataRepository mockRepository = MockDataRepository.getInstance();
     private final DateTimeFormatter displayDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public AddEventFragment() { super(R.layout.fragment_add_event); }
@@ -58,7 +60,7 @@ public class AddEventFragment extends Fragment {
             endInput.setText(date.format(displayDate));
         }));
 
-        List<Client> clients = repository.getClients();
+        List<Client> clients = mockRepository.getClients();
         List<String> clientNames = new ArrayList<>();
         for (Client client : clients) clientNames.add(client.getName());
         clientInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, clientNames));
@@ -72,18 +74,31 @@ public class AddEventFragment extends Fragment {
         campaignButton.setOnClickListener(v -> { selectedType[0] = EventType.CAMPAIGN; styleTypes(eventButton, campaignButton, false); });
         styleTypes(eventButton, campaignButton, true);
         view.findViewById(R.id.buttonAddEventBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
-        view.findViewById(R.id.buttonSaveNewEvent).setOnClickListener(v -> {
+        MaterialButton saveButton = view.findViewById(R.id.buttonSaveNewEvent);
+        saveButton.setOnClickListener(v -> {
             int clientIndex = clientNames.indexOf(clientInput.getText().toString());
             if (text(name).isEmpty() || text(location).isEmpty() || clientIndex < 0 || end[0].isBefore(start[0])) {
                 Toast.makeText(requireContext(), R.string.invalid_new_event, Toast.LENGTH_SHORT).show();
                 return;
             }
             Client client = clients.get(clientIndex);
-            Event saved = repository.addEvent(new Event(null, text(name), selectedType[0], start[0], end[0],
-                    text(location), EventStatus.CURRENT, client.getId(), text(billing), text(po), text(terms), text(notes), false));
-            Toast.makeText(requireContext(), R.string.new_event_saved, Toast.LENGTH_SHORT).show();
-            Bundle args = new Bundle(); args.putString("eventId", saved.getId());
-            Navigation.findNavController(view).navigate(R.id.action_addEventFragment_to_eventDetailsFragment, args);
+            Event event = new Event(null, text(name), selectedType[0], start[0], end[0],
+                    text(location), EventStatus.CURRENT, client.getId(), text(billing), text(po),
+                    text(terms), text(notes), false);
+            saveButton.setEnabled(false);
+            eventRepository.createEvent(event)
+                    .addOnSuccessListener(unused -> {
+                        if (!isAdded() || getView() != view) return;
+                        Toast.makeText(requireContext(), R.string.new_event_saved,
+                                Toast.LENGTH_SHORT).show();
+                        Navigation.findNavController(view).popBackStack();
+                    })
+                    .addOnFailureListener(error -> {
+                        if (!isAdded() || getView() != view) return;
+                        saveButton.setEnabled(true);
+                        Toast.makeText(requireContext(), R.string.event_save_error,
+                                Toast.LENGTH_SHORT).show();
+                    });
         });
     }
 

@@ -31,6 +31,7 @@
     <string name="select_client">Select client</string>
     <string name="invalid_new_event">Unesite naziv, datume, lokaciju i izaberite klijenta</string>
     <string name="new_event_saved">Event je uspešno dodat</string>
+    <string name="event_save_error">Event nije moguće sačuvati.</string>
     <string name="event_details">Event details</string>
     <string name="back">Back</string>
     <string name="edit">Edit</string>

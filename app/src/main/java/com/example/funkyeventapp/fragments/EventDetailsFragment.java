@@ -34,6 +34,7 @@ import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventAssignment;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.User;
+import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.services.PdfService;
 import com.google.android.material.button.MaterialButton;
@@ -55,6 +56,7 @@ import java.util.Locale;
 
 public class EventDetailsFragment extends Fragment {
     private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final EventRepository eventRepository = EventRepository.getInstance();
     private final PdfService pdfService = new PdfService();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
     private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
@@ -75,18 +77,42 @@ public class EventDetailsFragment extends Fragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
         String eventId = getArguments() == null ? null : getArguments().getString("eventId");
-        event = eventId == null ? null : repository.getEventById(eventId);
-        if (event == null) {
-            Toast.makeText(requireContext(), R.string.event_not_found, Toast.LENGTH_SHORT).show();
-            Navigation.findNavController(view).popBackStack();
+        if (eventId == null) {
+            showEventNotFound(view);
             return;
         }
+
+        eventRepository.getEventById(eventId, new EventRepository.Callback<Event>() {
+            @Override public void onSuccess(Event loadedEvent) {
+                if (!isAdded() || getView() != view) return;
+                if (loadedEvent == null) {
+                    showEventNotFound(view);
+                    return;
+                }
+                showEvent(view, loadedEvent);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != view) return;
+                Toast.makeText(requireContext(), R.string.events_load_error, Toast.LENGTH_SHORT).show();
+                Navigation.findNavController(view).popBackStack();
+            }
+        });
+    }
+
+    private void showEvent(@NonNull View view, @NonNull Event loadedEvent) {
+        event = loadedEvent;
         budget = repository.getBudgetForEvent(event.getId());
         bindViews(view);
         bindEvent(view);
         bindActions(view);
         renderTeam();
         renderBudget();
+    }
+
+    private void showEventNotFound(@NonNull View view) {
+        Toast.makeText(requireContext(), R.string.event_not_found, Toast.LENGTH_SHORT).show();
+        Navigation.findNavController(view).popBackStack();
     }
 
     private void bindViews(View view) {
