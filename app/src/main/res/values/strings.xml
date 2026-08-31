@@ -7,6 +7,7 @@
     <string name="team">TEAM</string>
     <string name="current_events">Current (%1$d)</string>
     <string name="past_events">Past (%1$d)</string>
+    <string name="events_load_error">Failed to load events.</string>
     <string name="cashbox">Cashbox</string>
     <string name="team_users">Team users</string>
     <string name="user_management">User management</string>
