@@ -19,14 +19,18 @@ import java.util.List;
 public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientViewHolder> {
     public interface OnClientClickListener { void onClientClick(Client client); }
     public interface OnClientEditListener { void onClientEdit(Client client); }
+    public interface OnClientDeleteListener { void onClientDelete(Client client); }
 
     private final List<Client> clients = new ArrayList<>();
     private final OnClientClickListener listener;
     private final OnClientEditListener editListener;
+    private final OnClientDeleteListener deleteListener;
 
-    public ClientAdapter(OnClientClickListener listener, OnClientEditListener editListener) {
+    public ClientAdapter(OnClientClickListener listener, OnClientEditListener editListener,
+                         OnClientDeleteListener deleteListener) {
         this.listener = listener;
         this.editListener = editListener;
+        this.deleteListener = deleteListener;
     }
 
     public void submitList(List<Client> newClients) {
@@ -46,7 +50,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     class ClientViewHolder extends RecyclerView.ViewHolder {
         private final ImageView logo;
         private final TextView initial, name, contact, email, phone;
-        private final ImageButton edit;
+        private final ImageButton edit, delete;
 
         ClientViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -57,6 +61,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             email = itemView.findViewById(R.id.textClientEmail);
             phone = itemView.findViewById(R.id.textClientPhone);
             edit = itemView.findViewById(R.id.buttonEditClient);
+            delete = itemView.findViewById(R.id.buttonDeleteClient);
         }
 
         void bind(Client client) {
@@ -70,6 +75,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             initial.setText(clientName == null || clientName.isEmpty() ? "?" : clientName.substring(0, 1));
             itemView.setOnClickListener(v -> listener.onClientClick(client));
             edit.setOnClickListener(v -> editListener.onClientEdit(client));
+            delete.setOnClickListener(v -> deleteListener.onClientDelete(client));
         }
     }
 }

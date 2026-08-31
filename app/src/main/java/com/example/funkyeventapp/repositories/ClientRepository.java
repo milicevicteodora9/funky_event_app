@@ -56,6 +56,10 @@ public final class ClientRepository {
         return firestore.collection("clients").document(client.getId()).update(data);
     }
 
+    public Task<Void> deleteClient(@NonNull String clientId) {
+        return firestore.collection("clients").document(clientId).delete();
+    }
+
     public void getAllClients(@NonNull Callback<List<Client>> callback) {
         firestore.collection("clients").get()
                 .addOnSuccessListener(snapshot -> {

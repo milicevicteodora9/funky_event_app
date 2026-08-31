@@ -51,7 +51,7 @@ public class ClientsFragment extends Fragment {
             Bundle arguments = new Bundle();
             arguments.putString("clientId", client.getId());
             Navigation.findNavController(view).navigate(R.id.action_clientsFragment_to_clientDetailsFragment, arguments);
-        }, client -> showClientDialog(view, client));
+        }, client -> showClientDialog(view, client), client -> confirmDeleteClient(view, client));
         RecyclerView clientsList = view.findViewById(R.id.recyclerClients);
         clientsList.setLayoutManager(new LinearLayoutManager(requireContext()));
         clientsList.setAdapter(adapter);
@@ -166,6 +166,27 @@ public class ClientsFragment extends Fragment {
 
     private String value(TextInputEditText input) {
         return input.getText() == null ? "" : input.getText().toString().trim();
+    }
+
+    private void confirmDeleteClient(View root, Client client) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_client)
+                .setMessage(getString(R.string.delete_client_question, client.getName()))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        clientRepository.deleteClient(client.getId())
+                                .addOnSuccessListener(unused -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(), R.string.client_deleted,
+                                            Toast.LENGTH_SHORT).show();
+                                    loadClients(root, adapter, clientsTitle);
+                                })
+                                .addOnFailureListener(error -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(), R.string.client_delete_error,
+                                            Toast.LENGTH_SHORT).show();
+                                }))
+                .show();
     }
 
     private void bindFinancialOverview() {
