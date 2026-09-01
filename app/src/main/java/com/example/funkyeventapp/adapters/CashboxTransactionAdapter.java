@@ -2,14 +2,13 @@ package com.example.funkyeventapp.adapters;
 
 import android.view.LayoutInflater; import android.view.View; import android.view.ViewGroup; import android.widget.TextView;
 import androidx.annotation.NonNull; import androidx.recyclerview.widget.RecyclerView;
-import com.example.funkyeventapp.R; import com.example.funkyeventapp.models.CashboxTransaction; import com.example.funkyeventapp.models.Event;
-import com.example.funkyeventapp.models.ExpensePurpose; import com.example.funkyeventapp.models.TransactionType; import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.R; import com.example.funkyeventapp.models.CashboxTransaction;
+import com.example.funkyeventapp.models.ExpensePurpose; import com.example.funkyeventapp.models.TransactionType;
 import java.text.DecimalFormat; import java.text.DecimalFormatSymbols; import java.time.format.DateTimeFormatter; import java.util.ArrayList; import java.util.List; import java.util.Locale;
 
 public class CashboxTransactionAdapter extends RecyclerView.Adapter<CashboxTransactionAdapter.Holder> {
     public interface Listener { void onReceipt(CashboxTransaction item); void onEdit(CashboxTransaction item); void onDelete(CashboxTransaction item); }
     private final List<CashboxTransaction> items=new ArrayList<>(); private final Listener listener;
-    private final MockDataRepository repository=MockDataRepository.getInstance();
     private final DecimalFormat money=new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private final DateTimeFormatter date=DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
     public CashboxTransactionAdapter(Listener listener){this.listener=listener;}
@@ -25,10 +24,9 @@ public class CashboxTransactionAdapter extends RecyclerView.Adapter<CashboxTrans
             amount.setTextColor(itemView.getContext().getColor(income?R.color.funky_mint:R.color.funky_expense));
             name.setText(tx.getDescription()==null||tx.getDescription().isEmpty()?tx.getName():tx.getName()+" · "+tx.getDescription());
             dateText.setText(tx.getDate().format(date));
-            Event event=tx.getEventId()==null?null:repository.getEventById(tx.getEventId());
             String purposeLabel=tx.getExpensePurpose()==ExpensePurpose.GENERAL
                     ?itemView.getContext().getString(R.string.general_expense)
-                    :event==null?itemView.getContext().getString(R.string.unknown_event):event.getName();
+                    :itemView.getContext().getString(R.string.cashbox_event_reference, tx.getEventId());
             purpose.setText(purposeLabel);
             receiptButton.setVisibility(tx.getReceiptId() == null ? View.GONE : View.VISIBLE);
         }

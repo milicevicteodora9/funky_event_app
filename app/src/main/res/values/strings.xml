@@ -184,6 +184,9 @@
     <string name="my_cashbox">My Cashbox</string>
     <string name="cashbox_owner">%1$s · Balance in %2$s</string>
     <string name="cashbox_not_found">Cashbox nije pronađen</string>
+    <string name="cashbox_load_failed">Cashbox nije moguće učitati</string>
+    <string name="cashbox_changes_not_available">Izmene cashbox-a još nisu povezane sa Firestore-om</string>
+    <string name="cashbox_event_reference">Event · %1$s</string>
     <string name="received_value">RECEIVED\n%1$s EUR</string>
     <string name="spent_value">SPENT\n%1$s EUR</string>
     <string name="balance_value">BALANCE\n%1$s EUR</string>

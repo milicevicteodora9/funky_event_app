@@ -36,10 +36,10 @@ import com.example.funkyeventapp.models.DocumentSource;
 import com.example.funkyeventapp.models.Receipt;
 import com.example.funkyeventapp.models.ScannedDocument;
 import com.example.funkyeventapp.models.TransactionType;
+import com.example.funkyeventapp.repositories.CashboxRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.services.AuthService;
-import com.example.funkyeventapp.services.AuthorizationService;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
@@ -58,6 +58,7 @@ import java.io.IOException;
 
 public class CashboxFragment extends Fragment {
     private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final CashboxRepository cashboxRepository = CashboxRepository.getInstance();
     private final DecimalFormat money = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private final DateTimeFormatter inputDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private Cashbox cashbox;
@@ -107,35 +108,25 @@ public class CashboxFragment extends Fragment {
         User current = AuthService.getInstance().getCurrentUser();
         if (current == null) { com.example.funkyeventapp.ui.AuthenticatedHeader.openLogin(view); return; }
         String requestedCashboxId = getArguments() == null ? null : getArguments().getString("cashboxId");
-        cashbox = requestedCashboxId == null ? repository.getOrCreateCashboxForUser(current.getId()) : repository.getCashboxById(requestedCashboxId);
-        boolean ownCashbox = cashbox != null && current.getId().equals(cashbox.getUserId());
-        if (cashbox != null && !ownCashbox && !AuthorizationService.canAccessUserManagement(current)) {
+        if (requestedCashboxId != null && !requestedCashboxId.equals(current.getId())) {
             Toast.makeText(requireContext(), R.string.access_denied, Toast.LENGTH_SHORT).show();
             Navigation.findNavController(view).popBackStack(); return;
         }
-        if (cashbox == null) {
-            Toast.makeText(requireContext(), R.string.cashbox_not_found, Toast.LENGTH_SHORT).show();
-            Navigation.findNavController(view).popBackStack();
-            return;
-        }
-        User owner = cashbox.getUserId() == null ? null : repository.getUserById(cashbox.getUserId());
-        String ownerName = ownCashbox ? current.getFullName()
-                : owner == null ? getString(R.string.general_expenses) : owner.getFullName();
         ((TextView) view.findViewById(R.id.textCashboxOwner)).setText(getString(R.string.cashbox_owner,
-                ownerName, cashbox.getDisplayCurrency().name()));
+                current.getFullName(), Currency.EUR.name()));
         adapter = new CashboxTransactionAdapter(new CashboxTransactionAdapter.Listener() {
-            @Override public void onReceipt(CashboxTransaction item) { showReceiptDetails(item); }
-            @Override public void onEdit(CashboxTransaction item) { showEntryDialog(item); }
-            @Override public void onDelete(CashboxTransaction item) { confirmDelete(item); }
+            @Override public void onReceipt(CashboxTransaction item) { showReadOnlyMessage(); }
+            @Override public void onEdit(CashboxTransaction item) { showReadOnlyMessage(); }
+            @Override public void onDelete(CashboxTransaction item) { showReadOnlyMessage(); }
         });
         RecyclerView list = view.findViewById(R.id.recyclerCashbox);
         list.setLayoutManager(new LinearLayoutManager(requireContext()));
         list.setAdapter(adapter);
         view.findViewById(R.id.buttonCashboxBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
-        view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> showEntryDialog(null));
-        view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> launchCamera());
-        view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> galleryLauncher.launch(new String[]{"image/*"}));
-        view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> pdfLauncher.launch(new String[]{"application/pdf"}));
+        view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> showReadOnlyMessage());
+        view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> showReadOnlyMessage());
+        view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> showReadOnlyMessage());
+        view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> showReadOnlyMessage());
         refreshCashbox();
     }
 
@@ -199,15 +190,48 @@ public class CashboxFragment extends Fragment {
     }
 
     private void refreshCashbox() {
-        List<CashboxTransaction> transactions = repository.getCashboxTransactions(cashbox.getId());
-        ((TextView) root.findViewById(R.id.textCashboxReceived)).setText(getString(R.string.received_value, money.format(repository.getCashboxTotal(cashbox.getId(), TransactionType.INCOME))));
-        ((TextView) root.findViewById(R.id.textCashboxSpent)).setText(getString(R.string.spent_value, money.format(repository.getCashboxTotal(cashbox.getId(), TransactionType.EXPENSE))));
-        BigDecimal balance = repository.getCashboxBalance(cashbox.getId());
-        TextView balanceView = root.findViewById(R.id.textCashboxBalance);
-        balanceView.setText(getString(R.string.balance_value, money.format(balance)));
-        balanceView.setTextColor(requireContext().getColor(balance.signum() < 0 ? R.color.funky_expense : R.color.funky_completed_text));
-        ((TextView) root.findViewById(R.id.textCashboxEntriesTitle)).setText(getString(R.string.all_entries, transactions.size()));
-        adapter.submitList(transactions);
+        cashboxRepository.getCashboxForCurrentUser(new CashboxRepository.Callback<CashboxRepository.CashboxData>() {
+            @Override public void onSuccess(CashboxRepository.CashboxData data) {
+                if (!isAdded() || getView() != root) return;
+                cashbox = data.getCashbox();
+                List<CashboxTransaction> transactions = data.getTransactions();
+                BigDecimal received = cashbox.getReceivedAmount();
+                BigDecimal spent = BigDecimal.ZERO;
+                for (CashboxTransaction transaction : transactions) {
+                    if (transaction.getTransactionType() == TransactionType.INCOME) {
+                        received = received.add(transaction.getAmountInEur());
+                    } else {
+                        spent = spent.add(transaction.getAmountInEur());
+                    }
+                }
+                BigDecimal balance = received.subtract(spent);
+                Currency displayCurrency = cashbox.getDisplayCurrency() == null ? Currency.EUR : cashbox.getDisplayCurrency();
+                User current = AuthService.getInstance().getCurrentUser();
+                String ownerName = current == null ? "" : current.getFullName();
+                ((TextView) root.findViewById(R.id.textCashboxOwner)).setText(getString(
+                        R.string.cashbox_owner, ownerName, displayCurrency.name()));
+                ((TextView) root.findViewById(R.id.textCashboxReceived)).setText(
+                        getString(R.string.received_value, money.format(received)));
+                ((TextView) root.findViewById(R.id.textCashboxSpent)).setText(
+                        getString(R.string.spent_value, money.format(spent)));
+                TextView balanceView = root.findViewById(R.id.textCashboxBalance);
+                balanceView.setText(getString(R.string.balance_value, money.format(balance)));
+                balanceView.setTextColor(requireContext().getColor(balance.signum() < 0
+                        ? R.color.funky_expense : R.color.funky_completed_text));
+                ((TextView) root.findViewById(R.id.textCashboxEntriesTitle)).setText(
+                        getString(R.string.all_entries, transactions.size()));
+                adapter.submitList(transactions);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != root) return;
+                Toast.makeText(requireContext(), R.string.cashbox_load_failed, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showReadOnlyMessage() {
+        Toast.makeText(requireContext(), R.string.cashbox_changes_not_available, Toast.LENGTH_SHORT).show();
     }
 
     private void showEntryDialog(@Nullable CashboxTransaction existing) {
