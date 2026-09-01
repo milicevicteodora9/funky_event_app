@@ -2,19 +2,12 @@ package com.example.funkyeventapp.fragments;
 
 import android.content.res.ColorStateList;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.InputType;
-import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,13 +20,13 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.Budget;
 import com.example.funkyeventapp.models.BudgetCategory;
 import com.example.funkyeventapp.models.BudgetItem;
-import com.example.funkyeventapp.models.BudgetItemSource;
 import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventAssignment;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.User;
+import com.example.funkyeventapp.repositories.BudgetRepository;
 import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
@@ -52,11 +45,13 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class EventDetailsFragment extends Fragment {
     private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final BudgetRepository budgetRepository = BudgetRepository.getInstance();
     private final ClientRepository clientRepository = ClientRepository.getInstance();
     private final EventRepository eventRepository = EventRepository.getInstance();
     private final PdfService pdfService = new PdfService();
@@ -64,6 +59,8 @@ public class EventDetailsFragment extends Fragment {
     private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private Event event;
     private Budget budget;
+    private final List<BudgetItem> budgetItems = new ArrayList<>();
+    private final List<BudgetCategory> budgetCategories = new ArrayList<>();
     private BudgetType selectedBudgetType = BudgetType.EXTERNAL;
     private TextView teamTitle, statusText, externalTotal, internalTotal, actualTotal, estimatedProfit, actualProfit;
     private ChipGroup teamGroup;
@@ -104,12 +101,38 @@ public class EventDetailsFragment extends Fragment {
 
     private void showEvent(@NonNull View view, @NonNull Event loadedEvent) {
         event = loadedEvent;
-        budget = repository.getBudgetForEvent(event.getId());
+        budget = new Budget(event.getId(), event.getId(), false, BigDecimal.ZERO);
         bindViews(view);
         bindEvent(view);
         bindActions(view);
         renderTeam();
         renderBudget();
+        loadBudget(view);
+    }
+
+    private void loadBudget(@NonNull View view) {
+        budgetRepository.getBudgetForEvent(event.getId(),
+                new BudgetRepository.Callback<BudgetRepository.BudgetData>() {
+                    @Override public void onSuccess(BudgetRepository.BudgetData data) {
+                        if (!isAdded() || getView() != view) return;
+                        budget = data.getBudget();
+                        budgetItems.clear();
+                        budgetItems.addAll(data.getItems());
+                        budgetCategories.clear();
+                        budgetCategories.addAll(data.getCategories());
+                        ((MaterialCheckBox) view.findViewById(R.id.checkIncludeVat))
+                                .setChecked(budget.isIncludeVat());
+                        ((EditText) view.findViewById(R.id.inputDiscount))
+                                .setText(stripZeros(budget.getDiscountPercentage()));
+                        renderBudget();
+                    }
+
+                    @Override public void onError(@NonNull Exception error) {
+                        if (!isAdded() || getView() != view) return;
+                        Toast.makeText(requireContext(), R.string.budget_load_error,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void showEventNotFound(@NonNull View view) {
@@ -147,13 +170,8 @@ public class EventDetailsFragment extends Fragment {
         EditText discount = view.findViewById(R.id.inputDiscount);
         vat.setChecked(budget.isIncludeVat());
         discount.setText(stripZeros(budget.getDiscountPercentage()));
-        vat.setOnCheckedChangeListener((button, checked) -> { budget.setIncludeVat(checked); renderSummary(); });
-        discount.addTextChangedListener(new SimpleTextWatcher() {
-            @Override public void afterTextChanged(Editable editable) {
-                budget.setDiscountPercentage(parseDecimal(editable.toString(), BigDecimal.ZERO));
-                renderSummary();
-            }
-        });
+        vat.setEnabled(false);
+        discount.setEnabled(false);
     }
 
     private void bindClient(@NonNull View view) {
@@ -193,8 +211,8 @@ public class EventDetailsFragment extends Fragment {
         externalTab.setOnClickListener(v -> selectBudget(BudgetType.EXTERNAL));
         internalTab.setOnClickListener(v -> selectBudget(BudgetType.INTERNAL));
         actualTab.setOnClickListener(v -> selectBudget(BudgetType.ACTUAL));
-        view.findViewById(R.id.buttonAddBudgetItem).setOnClickListener(v -> showBudgetItemDialog(null));
-        copyAllButton.setOnClickListener(v -> confirmCopyAll());
+        view.findViewById(R.id.buttonAddBudgetItem).setEnabled(false);
+        copyAllButton.setVisibility(View.GONE);
     }
 
     private void confirmDeleteEvent(@NonNull View root) {
@@ -266,15 +284,18 @@ public class EventDetailsFragment extends Fragment {
         renderTabs();
         renderSummary();
         budgetItemsContainer.removeAllViews();
-        List<BudgetItem> items = repository.getBudgetItems(event.getId(), selectedBudgetType);
-        for (BudgetCategory category : repository.getBudgetCategories()) {
+        List<BudgetItem> items = new ArrayList<>();
+        for (BudgetItem item : budgetItems) {
+            if (item.getBudgetType() == selectedBudgetType) items.add(item);
+        }
+        for (BudgetCategory category : budgetCategories) {
             boolean headingAdded = false;
             for (BudgetItem item : items) if (category.getId().equals(item.getCategoryId())) {
                 if (!headingAdded) { addCategoryHeading(category.getName()); headingAdded = true; }
                 addBudgetItemCard(item);
             }
         }
-        copyAllButton.setVisibility(selectedBudgetType == BudgetType.EXTERNAL ? View.VISIBLE : View.GONE);
+        copyAllButton.setVisibility(View.GONE);
     }
 
     private void renderTabs() {
@@ -290,8 +311,8 @@ public class EventDetailsFragment extends Fragment {
 
     private void renderSummary() {
         BigDecimal external = adjustedExternal();
-        BigDecimal internal = repository.getBudgetTotal(event.getId(), BudgetType.INTERNAL);
-        BigDecimal actual = repository.getBudgetTotal(event.getId(), BudgetType.ACTUAL);
+        BigDecimal internal = getBudgetTotal(BudgetType.INTERNAL);
+        BigDecimal actual = getBudgetTotal(BudgetType.ACTUAL);
         externalTotal.setText(getString(R.string.total_external, money(external)));
         internalTotal.setText(getString(R.string.total_internal, money(internal)));
         actualTotal.setText(getString(R.string.total_actual, money(actual)));
@@ -300,11 +321,19 @@ public class EventDetailsFragment extends Fragment {
     }
 
     private BigDecimal adjustedExternal() {
-        BigDecimal value = repository.getBudgetTotal(event.getId(), BudgetType.EXTERNAL);
+        BigDecimal value = getBudgetTotal(BudgetType.EXTERNAL);
         BigDecimal discount = budget.getDiscountPercentage() == null ? BigDecimal.ZERO : budget.getDiscountPercentage();
         value = value.multiply(BigDecimal.ONE.subtract(discount.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP)));
         if (budget.isIncludeVat()) value = value.multiply(new BigDecimal("1.20"));
         return value;
+    }
+
+    private BigDecimal getBudgetTotal(BudgetType type) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (BudgetItem item : budgetItems) {
+            if (item.getBudgetType() == type) total = total.add(item.getTotal());
+        }
+        return total;
     }
 
     private void addCategoryHeading(String name) {
@@ -339,92 +368,8 @@ public class EventDetailsFragment extends Fragment {
         textColumn.addView(description); textColumn.addView(formula); row.addView(textColumn);
         TextView amount = text(money(item.getTotal()), 13, R.color.funky_text, true);
         amount.setPadding(dp(6), 0, dp(4), 0); row.addView(amount);
-        if (selectedBudgetType == BudgetType.EXTERNAL) row.addView(actionButton(R.drawable.ic_copy, v -> copyItem(item)));
-        row.addView(actionButton(R.drawable.ic_edit, v -> showBudgetItemDialog(item)));
-        row.addView(actionButton(R.drawable.ic_delete, v -> confirmDelete(item)));
         card.addView(row);
         budgetItemsContainer.addView(card);
-    }
-
-    private ImageButton actionButton(int icon, View.OnClickListener listener) {
-        ImageButton button = new ImageButton(requireContext());
-        button.setLayoutParams(new LinearLayout.LayoutParams(dp(34), dp(34)));
-        button.setPadding(dp(7), dp(7), dp(7), dp(7));
-        button.setImageResource(icon);
-        button.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-        button.setOnClickListener(listener);
-        return button;
-    }
-
-    private void showBudgetItemDialog(@Nullable BudgetItem existing) {
-        LinearLayout form = new LinearLayout(requireContext());
-        form.setOrientation(LinearLayout.VERTICAL);
-        form.setPadding(dp(20), 0, dp(20), 0);
-        Spinner categorySpinner = new Spinner(requireContext());
-        EditText newCategory = field(R.string.new_category, false);
-        Button createCategory = new Button(requireContext()); createCategory.setText(R.string.create_category);
-        EditText description = field(R.string.description, false);
-        EditText quantity = field(R.string.quantity, true);
-        EditText days = field(R.string.days, true);
-        EditText rate = field(R.string.daily_rate, true);
-        EditText notes = field(R.string.notes, false);
-        form.addView(categorySpinner); form.addView(newCategory); form.addView(createCategory);
-        form.addView(description); form.addView(quantity); form.addView(days); form.addView(rate); form.addView(notes);
-        final List<BudgetCategory> categories = new java.util.ArrayList<>(repository.getBudgetCategories());
-        ArrayAdapter<BudgetCategory> categoryAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, categories);
-        categorySpinner.setAdapter(categoryAdapter);
-        createCategory.setOnClickListener(v -> {
-            String name = newCategory.getText().toString().trim();
-            if (name.isEmpty()) return;
-            BudgetCategory created = repository.addBudgetCategory(name);
-            categories.clear(); categories.addAll(repository.getBudgetCategories()); categoryAdapter.notifyDataSetChanged();
-            categorySpinner.setSelection(categories.indexOf(created)); newCategory.setText(""); showToast(R.string.category_created);
-        });
-        if (existing != null) {
-            description.setText(existing.getDescription()); quantity.setText(stripZeros(existing.getQuantity()));
-            days.setText(stripZeros(existing.getDays())); rate.setText(stripZeros(existing.getDailyRate())); notes.setText(existing.getNotes());
-            for (int i = 0; i < categories.size(); i++) if (categories.get(i).getId().equals(existing.getCategoryId())) categorySpinner.setSelection(i);
-        }
-        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(existing == null ? R.string.add_item : R.string.edit)
-                .setView(form).setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.save, null).create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            BigDecimal q = parseDecimal(quantity.getText().toString(), null);
-            BigDecimal d = parseDecimal(days.getText().toString(), null);
-            BigDecimal r = parseDecimal(rate.getText().toString(), null);
-            if (description.getText().toString().trim().isEmpty() || q == null || d == null || r == null || q.signum() < 0 || d.signum() < 0 || r.signum() < 0) {
-                showToast(R.string.invalid_budget_item); return;
-            }
-            BudgetItem target = existing == null ? new BudgetItem() : existing;
-            target.setEventId(event.getId()); target.setBudgetType(existing == null ? selectedBudgetType : existing.getBudgetType());
-            target.setCategoryId(((BudgetCategory) categorySpinner.getSelectedItem()).getId());
-            target.setDescription(description.getText().toString().trim()); target.setQuantity(q); target.setDays(d); target.setDailyRate(r);
-            target.setNotes(notes.getText().toString().trim()); target.setSourceType(BudgetItemSource.MANUAL); target.setSourceTransactionId(null);
-            if (existing == null) repository.addBudgetItem(target); else repository.updateBudgetItem(target);
-            dialog.dismiss(); renderBudget();
-        }));
-        dialog.show();
-    }
-
-    private void copyItem(BudgetItem item) {
-        showToast(repository.copyBudgetItemToInternal(item.getId()) ? R.string.copied_internal : R.string.already_copied);
-        renderSummary();
-    }
-
-    private void confirmCopyAll() {
-        new MaterialAlertDialogBuilder(requireContext()).setMessage(R.string.confirm_copy_all)
-                .setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.add, (d, w) -> {
-                    int count = repository.copyAllExternalToInternal(event.getId());
-                    Toast.makeText(requireContext(), count == 0 ? getString(R.string.nothing_to_copy) : getString(R.string.items_copied, count), Toast.LENGTH_SHORT).show();
-                    renderBudget();
-                }).show();
-    }
-
-    private void confirmDelete(BudgetItem item) {
-        new MaterialAlertDialogBuilder(requireContext()).setMessage(R.string.confirm_delete_item)
-                .setNegativeButton(R.string.cancel, null).setPositiveButton(R.string.delete, (d, w) -> {
-                    repository.deleteBudgetItem(item.getId()); renderBudget();
-                }).show();
     }
 
     private void generateAndShareQuote() {
@@ -435,12 +380,6 @@ public class EventDetailsFragment extends Fragment {
         } catch (IOException | RuntimeException error) {
             Toast.makeText(requireContext(), R.string.pdf_quote_error, Toast.LENGTH_LONG).show();
         }
-    }
-
-    private EditText field(int hint, boolean numeric) {
-        EditText field = new EditText(requireContext()); field.setHint(hint); field.setTextSize(14);
-        field.setSingleLine(true); field.setInputType(numeric ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL : InputType.TYPE_CLASS_TEXT);
-        return field;
     }
 
     private TextView text(String value, float size, int color, boolean bold) {
@@ -463,12 +402,7 @@ public class EventDetailsFragment extends Fragment {
     }
     private String money(BigDecimal value) { return moneyFormat.format(value.setScale(2, RoundingMode.HALF_UP)) + " €"; }
     private String stripZeros(BigDecimal value) { return value == null ? "" : value.stripTrailingZeros().toPlainString(); }
-    private BigDecimal parseDecimal(String value, BigDecimal fallback) { try { return new BigDecimal(value.trim().replace(',', '.')); } catch (Exception e) { return fallback; } }
     private String valueOrDash(String value) { return value == null || value.trim().isEmpty() ? "—" : value; }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private void showToast(int message) { Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show(); }
-    private abstract static class SimpleTextWatcher implements TextWatcher {
-        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-        @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
-    }
 }
