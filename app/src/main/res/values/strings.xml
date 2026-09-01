@@ -195,6 +195,10 @@
     <string name="add_cashbox_expense">Add cashbox expense</string>
     <string name="cashbox_expense_saved">Rashod je uspešno dodat</string>
     <string name="cashbox_expense_save_failed">Rashod nije moguće sačuvati</string>
+    <string name="cashbox_rules_blocked">Firestore rules blokiraju čuvanje Cashbox podatka</string>
+    <string name="received_total_entry">Received amount</string>
+    <string name="received_entries">Received entries (%1$d)</string>
+    <string name="spent_entries">Spent entries (%1$d)</string>
     <string name="received_value">RECEIVED\n%1$s EUR</string>
     <string name="spent_value">SPENT\n%1$s EUR</string>
     <string name="balance_value">BALANCE\n%1$s EUR</string>

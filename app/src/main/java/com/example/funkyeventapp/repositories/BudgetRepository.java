@@ -8,6 +8,7 @@ import com.example.funkyeventapp.models.BudgetCategory;
 import com.example.funkyeventapp.models.BudgetItem;
 import com.example.funkyeventapp.models.BudgetItemSource;
 import com.example.funkyeventapp.models.BudgetType;
+import com.example.funkyeventapp.models.CashboxTransaction;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -94,6 +95,60 @@ public final class BudgetRepository {
                     return null;
                 })
                 .addOnSuccessListener(unused -> item.setId(itemDocument.getId()));
+    }
+
+    Task<Void> createCashboxExpenseWithActual(@NonNull String userId,
+                                               @NonNull CashboxTransaction expense,
+                                               @NonNull Map<String, Object> cashboxTransactionData) {
+        if (expense.getId() == null || expense.getEventId() == null
+                || expense.getAmountInEur() == null) {
+            throw new IllegalArgumentException("Cashbox transaction ID, event ID and amount are required");
+        }
+
+        String eventId = expense.getEventId();
+        String transactionId = expense.getId();
+        DocumentReference cashboxDocument = firestore.collection("cashboxes").document(userId);
+        DocumentReference cashboxTransactionDocument = cashboxDocument
+                .collection("transactions").document(transactionId);
+        DocumentReference budgetDocument = firestore.collection("budgets").document(eventId);
+        DocumentReference actualItemDocument = budgetDocument.collection("items")
+                .document("cashbox_" + transactionId);
+        BudgetItem actualItem = new BudgetItem(actualItemDocument.getId(), eventId,
+                BudgetType.ACTUAL, expense.getCategoryId(), expense.getDescription(),
+                BigDecimal.ONE, BigDecimal.ONE, expense.getAmountInEur(), "",
+                BudgetItemSource.CASHBOX, transactionId, null);
+        Map<String, Object> actualItemData = itemData(actualItem);
+        actualItemData.put("sourceTransactionId", transactionId);
+        actualItemData.put("sourceBudgetItemId", null);
+
+        return firestore.runTransaction(transaction -> {
+            DocumentSnapshot cashboxSnapshot = transaction.get(cashboxDocument);
+            DocumentSnapshot budgetSnapshot = transaction.get(budgetDocument);
+            DocumentSnapshot actualItemSnapshot = transaction.get(actualItemDocument);
+            if (!cashboxSnapshot.exists() || !userId.equals(cashboxSnapshot.getString("userId"))) {
+                throw new IllegalStateException("Cashbox must belong to the authenticated user");
+            }
+            if (actualItemSnapshot.exists()) {
+                String sourceType = actualItemSnapshot.getString("sourceType");
+                String existingSourceId = actualItemSnapshot.getString("sourceTransactionId");
+                if (!BudgetItemSource.CASHBOX.name().equals(sourceType)
+                        || !transactionId.equals(existingSourceId)) {
+                    throw new IllegalStateException("Budget item ID collision");
+                }
+            }
+            if (!budgetSnapshot.exists()) {
+                Map<String, Object> budgetData = new HashMap<>();
+                budgetData.put("eventId", eventId);
+                budgetData.put("includeVat", false);
+                budgetData.put("discountPercentage", 0.0);
+                transaction.set(budgetDocument, budgetData);
+            }
+            transaction.set(cashboxTransactionDocument, cashboxTransactionData);
+            if (!actualItemSnapshot.exists()) {
+                transaction.set(actualItemDocument, actualItemData);
+            }
+            return null;
+        });
     }
 
     public Task<Void> updateBudgetItem(@NonNull String eventId, @NonNull BudgetItem item) {
@@ -237,7 +292,7 @@ public final class BudgetRepository {
                 : BudgetItemSource.valueOf(sourceValue.toUpperCase(Locale.ROOT));
         return new BudgetItem(document.getId(), eventId,
                 BudgetType.valueOf(typeValue.toUpperCase(Locale.ROOT)),
-                requiredString(document, "categoryId"),
+                optionalString(document, "categoryId"),
                 optionalString(document, "description"),
                 decimal(document.get("quantity"), BigDecimal.ZERO),
                 decimal(document.get("days"), BigDecimal.ZERO),

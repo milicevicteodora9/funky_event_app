@@ -51,6 +51,7 @@ public final class CashboxRepository {
     private static final CashboxRepository INSTANCE = new CashboxRepository();
     private final FirebaseAuth auth = FirebaseAuth.getInstance();
     private final FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+    private final BudgetRepository budgetRepository = BudgetRepository.getInstance();
 
     private CashboxRepository() { }
 
@@ -128,7 +129,18 @@ public final class CashboxRepository {
                 firestore.collection("cashboxes").document(userId);
         com.google.firebase.firestore.DocumentReference transactionDocument =
                 cashboxDocument.collection("transactions").document();
+        expense.setId(transactionDocument.getId());
+        expense.setCashboxId(userId);
         Map<String, Object> data = expenseData(expense);
+        if (expense.getEventId() != null && !expense.getEventId().trim().isEmpty()) {
+            budgetRepository.createCashboxExpenseWithActual(userId, expense, data)
+                    .addOnSuccessListener(unused -> callback.onSuccess(null))
+                    .addOnFailureListener(error -> {
+                        expense.setId(null);
+                        callback.onError(error);
+                    });
+            return;
+        }
         firestore.runTransaction(transaction -> {
             if (!transaction.get(cashboxDocument).exists()) {
                 throw new IllegalStateException("Cashbox must be initialized before adding expenses");
@@ -136,10 +148,11 @@ public final class CashboxRepository {
             transaction.set(transactionDocument, data);
             return null;
         }).addOnSuccessListener(unused -> {
-            expense.setId(transactionDocument.getId());
-            expense.setCashboxId(userId);
             callback.onSuccess(null);
-        }).addOnFailureListener(callback::onError);
+        }).addOnFailureListener(error -> {
+            expense.setId(null);
+            callback.onError(error);
+        });
     }
 
     private Map<String, Object> expenseData(CashboxTransaction expense) {

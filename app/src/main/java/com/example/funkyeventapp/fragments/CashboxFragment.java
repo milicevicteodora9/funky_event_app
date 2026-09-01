@@ -40,6 +40,7 @@ import com.example.funkyeventapp.repositories.CashboxRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.services.AuthService;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
@@ -64,6 +65,8 @@ public class CashboxFragment extends Fragment {
     private Cashbox cashbox;
     private View root;
     private CashboxTransactionAdapter adapter;
+    private final List<CashboxTransaction> cashboxEntries = new ArrayList<>();
+    private TransactionType entryFilter;
     private Uri pendingCameraUri;
     private String pendingCameraFileName;
     private ActivityResultLauncher<Uri> cameraLauncher;
@@ -124,7 +127,10 @@ public class CashboxFragment extends Fragment {
         list.setAdapter(adapter);
         view.findViewById(R.id.buttonCashboxBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
         view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> loadEventsAndShowExpenseDialog());
-        view.findViewById(R.id.textCashboxReceived).setOnClickListener(v -> showReceivedAmountDialog());
+        view.findViewById(R.id.textCashboxReceived).setOnClickListener(v -> setEntryFilter(TransactionType.INCOME));
+        view.findViewById(R.id.textCashboxSpent).setOnClickListener(v -> setEntryFilter(TransactionType.EXPENSE));
+        view.findViewById(R.id.textCashboxBalance).setOnClickListener(v -> setEntryFilter(null));
+        view.findViewById(R.id.textCashboxEntriesTitle).setOnClickListener(v -> setEntryFilter(null));
         view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> showReadOnlyMessage());
         view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> showReadOnlyMessage());
         view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> showReadOnlyMessage());
@@ -209,9 +215,23 @@ public class CashboxFragment extends Fragment {
                 balanceView.setText(getString(R.string.balance_value, money.format(balance)));
                 balanceView.setTextColor(requireContext().getColor(balance.signum() < 0
                         ? R.color.funky_expense : R.color.funky_completed_text));
-                ((TextView) root.findViewById(R.id.textCashboxEntriesTitle)).setText(
-                        getString(R.string.all_entries, transactions.size()));
-                adapter.submitList(transactions);
+                cashboxEntries.clear();
+                if (received.signum() > 0) {
+                    LocalDate receivedDate = cashbox.getCreatedAt() == null
+                            ? LocalDate.now() : cashbox.getCreatedAt().toLocalDate();
+                    cashboxEntries.add(new CashboxTransaction("received_total", cashbox.getId(),
+                            getString(R.string.received_total_entry), "", received, Currency.EUR,
+                            BigDecimal.ONE, received, receivedDate, TransactionType.INCOME,
+                            ExpensePurpose.GENERAL, null, null));
+                }
+                cashboxEntries.addAll(transactions);
+                cashboxEntries.sort((first, second) -> {
+                    LocalDate firstDate = first.getDate() == null ? LocalDate.MIN : first.getDate();
+                    LocalDate secondDate = second.getDate() == null ? LocalDate.MIN : second.getDate();
+                    return secondDate.compareTo(firstDate);
+                });
+                applyEntryFilter();
+                loadEventNames();
             }
 
             @Override public void onError(@NonNull Exception error) {
@@ -219,6 +239,41 @@ public class CashboxFragment extends Fragment {
                 Toast.makeText(requireContext(), R.string.cashbox_load_failed, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void loadEventNames() {
+        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+            @Override public void onSuccess(List<Event> events) {
+                if (!isAdded() || getView() != root) return;
+                adapter.submitEventNames(events);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                // Cashbox data remains usable; unresolved event references show the existing fallback.
+            }
+        });
+    }
+
+    private void setEntryFilter(@Nullable TransactionType filter) {
+        entryFilter = filter;
+        applyEntryFilter();
+    }
+
+    private void applyEntryFilter() {
+        if (adapter == null || root == null) return;
+        List<CashboxTransaction> visibleEntries = new ArrayList<>();
+        for (CashboxTransaction transaction : cashboxEntries) {
+            if (entryFilter == null || transaction.getTransactionType() == entryFilter) {
+                visibleEntries.add(transaction);
+            }
+        }
+        int title = entryFilter == TransactionType.INCOME
+                ? R.string.received_entries
+                : entryFilter == TransactionType.EXPENSE
+                ? R.string.spent_entries : R.string.all_entries;
+        ((TextView) root.findViewById(R.id.textCashboxEntriesTitle)).setText(
+                getString(title, visibleEntries.size()));
+        adapter.submitList(visibleEntries);
     }
 
     private void showReceivedAmountDialog() {
@@ -259,7 +314,7 @@ public class CashboxFragment extends Fragment {
                             @Override public void onError(@NonNull Exception error) {
                                 if (!isAdded() || getView() != root) return;
                                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                                Toast.makeText(requireContext(), R.string.received_amount_save_failed, Toast.LENGTH_SHORT).show();
+                                showSaveError(error, R.string.received_amount_save_failed);
                             }
                         });
                     } catch (NumberFormatException error) {
@@ -289,7 +344,7 @@ public class CashboxFragment extends Fragment {
 
     private void showExpenseDialog(List<Event> assignedEvents) {
         View form = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_cashbox_entry, null, false);
-        ((TextView) form.findViewById(R.id.textCashboxEntryDialogTitle)).setText(R.string.add_cashbox_expense);
+        ((TextView) form.findViewById(R.id.textCashboxEntryDialogTitle)).setText(R.string.add_cashbox_entry);
         MaterialButton received = form.findViewById(R.id.buttonEntryReceived);
         MaterialButton spent = form.findViewById(R.id.buttonEntrySpent);
         TextInputEditText amount = form.findViewById(R.id.inputEntryAmount);
@@ -344,8 +399,16 @@ public class CashboxFragment extends Fragment {
             selectedDate[0] = LocalDate.of(year, month + 1, day);
             date.setText(selectedDate[0].format(inputDate));
         }, selectedDate[0].getYear(), selectedDate[0].getMonthValue() - 1, selectedDate[0].getDayOfMonth()).show());
-        received.setEnabled(false);
-        spent.setOnClickListener(v -> { selectedType[0] = TransactionType.EXPENSE; styleTypeButtons(received, spent, false); });
+        received.setOnClickListener(v -> {
+            selectedType[0] = TransactionType.INCOME;
+            eventInput.setEnabled(false);
+            styleTypeButtons(received, spent, true);
+        });
+        spent.setOnClickListener(v -> {
+            selectedType[0] = TransactionType.EXPENSE;
+            eventInput.setEnabled(true);
+            styleTypeButtons(received, spent, false);
+        });
         styleTypeButtons(received, spent, false);
         currency.setOnItemClickListener((parent, view, position, id) -> {
             BigDecimal newRate = exchangeRate(currencies[position]);
@@ -359,13 +422,35 @@ public class CashboxFragment extends Fragment {
             try {
                 String entryDescription = text(description);
                 BigDecimal originalAmount = new BigDecimal(text(amount).replace(',', '.'));
-                if (entryDescription.isEmpty() || originalAmount.signum() <= 0) throw new NumberFormatException();
+                if (originalAmount.signum() <= 0
+                        || (selectedType[0] == TransactionType.EXPENSE && entryDescription.isEmpty())) {
+                    throw new NumberFormatException();
+                }
                 Currency selectedCurrency = Currency.valueOf(currency.getText().toString());
                 BigDecimal rate = new BigDecimal(text(rateInput).replace(',', '.'));
                 if (rate.signum() <= 0) throw new NumberFormatException();
                 BigDecimal eur = text(eurInput).isEmpty() ? originalAmount.divide(rate, 2, RoundingMode.HALF_UP)
                         : new BigDecimal(text(eurInput).replace(',', '.'));
                 if (eur.signum() <= 0) throw new NumberFormatException();
+                if (selectedType[0] == TransactionType.INCOME) {
+                    saveButton.setEnabled(false);
+                    BigDecimal newReceivedAmount = cashbox.getReceivedAmount().add(eur);
+                    cashboxRepository.saveReceivedAmount(newReceivedAmount, new CashboxRepository.Callback<Void>() {
+                        @Override public void onSuccess(Void ignored) {
+                            if (!isAdded() || getView() != root) return;
+                            dialog.dismiss();
+                            Toast.makeText(requireContext(), R.string.received_amount_saved, Toast.LENGTH_SHORT).show();
+                            refreshCashbox();
+                        }
+
+                            @Override public void onError(@NonNull Exception error) {
+                                if (!isAdded() || getView() != root) return;
+                                saveButton.setEnabled(true);
+                                showSaveError(error, R.string.received_amount_save_failed);
+                        }
+                    });
+                    return;
+                }
                 int eventPosition = selectedEventPosition[0];
                 Event selectedEvent = eventPosition > 0 ? assignedEvents.get(eventPosition - 1) : null;
                 if (eventPosition < 0) throw new IllegalArgumentException();
@@ -384,7 +469,7 @@ public class CashboxFragment extends Fragment {
                     @Override public void onError(@NonNull Exception error) {
                         if (!isAdded() || getView() != root) return;
                         saveButton.setEnabled(true);
-                        Toast.makeText(requireContext(), R.string.cashbox_expense_save_failed, Toast.LENGTH_SHORT).show();
+                        showSaveError(error, R.string.cashbox_expense_save_failed);
                     }
                 });
             } catch (Exception exception) { Toast.makeText(requireContext(), R.string.invalid_cashbox_entry, Toast.LENGTH_SHORT).show(); }
@@ -412,6 +497,14 @@ public class CashboxFragment extends Fragment {
             case USD: return new BigDecimal("1.08");
             default: return BigDecimal.ONE;
         }
+    }
+
+    private void showSaveError(Exception error, int fallbackMessage) {
+        boolean permissionDenied = error instanceof FirebaseFirestoreException
+                && ((FirebaseFirestoreException) error).getCode()
+                == FirebaseFirestoreException.Code.PERMISSION_DENIED;
+        Toast.makeText(requireContext(), permissionDenied
+                ? R.string.cashbox_rules_blocked : fallbackMessage, Toast.LENGTH_LONG).show();
     }
 
     private String text(TextInputEditText input) { return input.getText() == null ? "" : input.getText().toString().trim(); }
