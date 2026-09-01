@@ -17,8 +17,10 @@ import androidx.navigation.Navigation;
 
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.EventAdapter;
+import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
+import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.ui.AuthenticatedHeader;
 import com.google.android.material.button.MaterialButton;
@@ -28,6 +30,7 @@ import java.util.List;
 
 public class EventsFragment extends Fragment {
     private final EventRepository repository = EventRepository.getInstance();
+    private final ClientRepository clientRepository = ClientRepository.getInstance();
     private final List<Event> events = new ArrayList<>();
     private EventAdapter adapter;
     private MaterialButton currentButton;
@@ -86,6 +89,7 @@ public class EventsFragment extends Fragment {
                 Navigation.findNavController(v).navigate(R.id.action_eventsFragment_to_addEventFragment));
         showEvents(selectedStatus);
         loadEvents(view);
+        loadClients(view);
     }
 
     private void showEvents(EventStatus status) {
@@ -121,6 +125,21 @@ public class EventsFragment extends Fragment {
             @Override public void onError(@NonNull Exception error) {
                 if (!isAdded() || getView() != root) return;
                 Toast.makeText(requireContext(), R.string.events_load_error,
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadClients(View root) {
+        clientRepository.getAllClients(new ClientRepository.Callback<List<Client>>() {
+            @Override public void onSuccess(List<Client> clients) {
+                if (!isAdded() || getView() != root) return;
+                adapter.submitClients(clients);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != root) return;
+                Toast.makeText(requireContext(), R.string.clients_load_error,
                         Toast.LENGTH_SHORT).show();
             }
         });

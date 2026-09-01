@@ -13,18 +13,19 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
-import com.example.funkyeventapp.repositories.MockDataRepository;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
     public interface OnEventClickListener { void onEventClick(Event event); }
     private final List<Event> events = new ArrayList<>();
+    private final Map<String, Client> clientsById = new HashMap<>();
     private final OnEventClickListener listener;
-    private final MockDataRepository repository = MockDataRepository.getInstance();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
 
     public EventAdapter(OnEventClickListener listener) { this.listener = listener; }
@@ -32,6 +33,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     public void submitList(List<Event> newEvents) {
         events.clear();
         events.addAll(newEvents);
+        notifyDataSetChanged();
+    }
+
+    public void submitClients(List<Client> clients) {
+        clientsById.clear();
+        for (Client client : clients) clientsById.put(client.getId(), client);
         notifyDataSetChanged();
     }
 
@@ -58,8 +65,10 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             status = itemView.findViewById(R.id.textEventStatus);
         }
         void bind(Event event) {
-            Client eventClient = repository.getClientById(event.getClientId());
-            String clientName = eventClient == null ? "Unknown client" : eventClient.getName();
+            Client eventClient = clientsById.get(event.getClientId());
+            String clientName = eventClient == null
+                    ? itemView.getContext().getString(R.string.unknown_client)
+                    : eventClient.getName();
             name.setText(event.getName());
             type.setText(event.getType().getLabel());
             String dateText = event.getStartDate().format(dateFormatter);

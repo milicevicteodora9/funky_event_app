@@ -34,6 +34,7 @@ import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventAssignment;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.User;
+import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.services.PdfService;
@@ -56,6 +57,7 @@ import java.util.Locale;
 
 public class EventDetailsFragment extends Fragment {
     private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final ClientRepository clientRepository = ClientRepository.getInstance();
     private final EventRepository eventRepository = EventRepository.getInstance();
     private final PdfService pdfService = new PdfService();
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
@@ -137,9 +139,7 @@ public class EventDetailsFragment extends Fragment {
         ((TextView) view.findViewById(R.id.textDetailDate)).setText(formatDateRange());
         ((TextView) view.findViewById(R.id.textDetailLocation)).setText(event.getLocation());
         updateStatus();
-        Client client = repository.getClientById(event.getClientId());
-        ((TextView) view.findViewById(R.id.textClientNameDetail)).setText(client == null ? getString(R.string.unknown_client) : client.getName());
-        ((TextView) view.findViewById(R.id.textClientContact)).setText(client == null ? "—" : client.getContactPerson() + " · " + client.getEmail());
+        bindClient(view);
         ((TextView) view.findViewById(R.id.textBillingEntity)).setText(valueOrDash(event.getBillingEntity()));
         ((TextView) view.findViewById(R.id.textPoNumber)).setText(valueOrDash(event.getPoNumber()));
         ((TextView) view.findViewById(R.id.textPaymentTerms)).setText(valueOrDash(event.getPaymentTerms()));
@@ -154,6 +154,27 @@ public class EventDetailsFragment extends Fragment {
                 renderSummary();
             }
         });
+    }
+
+    private void bindClient(@NonNull View view) {
+        TextView clientName = view.findViewById(R.id.textClientNameDetail);
+        TextView clientContact = view.findViewById(R.id.textClientContact);
+        clientName.setText(R.string.unknown_client);
+        clientContact.setText("—");
+        clientRepository.getClientById(event.getClientId(),
+                new ClientRepository.Callback<Client>() {
+                    @Override public void onSuccess(Client client) {
+                        if (!isAdded() || getView() != view || client == null) return;
+                        clientName.setText(client.getName());
+                        clientContact.setText(client.getContactPerson() + " · " + client.getEmail());
+                    }
+
+                    @Override public void onError(@NonNull Exception error) {
+                        if (!isAdded() || getView() != view) return;
+                        Toast.makeText(requireContext(), R.string.clients_load_error,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void bindActions(View view) {

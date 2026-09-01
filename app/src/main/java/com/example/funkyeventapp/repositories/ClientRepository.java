@@ -66,13 +66,7 @@ public final class ClientRepository {
                     try {
                         List<Client> clients = new ArrayList<>();
                         for (DocumentSnapshot document : snapshot.getDocuments()) {
-                            Client client = document.toObject(Client.class);
-                            if (client == null) {
-                                throw new IllegalStateException(
-                                        "Could not map client document: " + document.getId());
-                            }
-                            client.setId(document.getId());
-                            clients.add(client);
+                            clients.add(mapClient(document));
                         }
                         callback.onSuccess(clients);
                     } catch (IllegalArgumentException | IllegalStateException error) {
@@ -80,5 +74,31 @@ public final class ClientRepository {
                     }
                 })
                 .addOnFailureListener(callback::onError);
+    }
+
+    public void getClientById(@NonNull String clientId, @NonNull Callback<Client> callback) {
+        firestore.collection("clients").document(clientId).get()
+                .addOnSuccessListener(document -> {
+                    if (!document.exists()) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+                    try {
+                        callback.onSuccess(mapClient(document));
+                    } catch (IllegalArgumentException | IllegalStateException error) {
+                        callback.onError(error);
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
+    private Client mapClient(DocumentSnapshot document) {
+        Client client = document.toObject(Client.class);
+        if (client == null) {
+            throw new IllegalStateException(
+                    "Could not map client document: " + document.getId());
+        }
+        client.setId(document.getId());
+        return client;
     }
 }

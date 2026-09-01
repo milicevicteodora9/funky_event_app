@@ -16,8 +16,8 @@ import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.EventType;
+import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
-import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -28,7 +28,7 @@ import java.util.List;
 
 public class AddEventFragment extends Fragment {
     private final EventRepository eventRepository = EventRepository.getInstance();
-    private final MockDataRepository mockRepository = MockDataRepository.getInstance();
+    private final ClientRepository clientRepository = ClientRepository.getInstance();
     private final DateTimeFormatter displayDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public AddEventFragment() { super(R.layout.fragment_add_event); }
@@ -55,6 +55,9 @@ public class AddEventFragment extends Fragment {
         LocalDate[] start = {LocalDate.now()};
         LocalDate[] end = {LocalDate.now()};
         Event[] existingEvent = {null};
+        String[] selectedClientId = {null};
+        boolean[] clientsLoaded = {false};
+        boolean[] eventLoaded = {!editMode};
         startInput.setText(start[0].format(displayDate));
         endInput.setText(end[0].format(displayDate));
         startInput.setOnClickListener(v -> pickDate(start[0], date -> {
@@ -67,13 +70,15 @@ public class AddEventFragment extends Fragment {
             endInput.setText(date.format(displayDate));
         }));
 
-        List<Client> clients = mockRepository.getClients();
+        List<Client> clients = new ArrayList<>();
         List<String> clientNames = new ArrayList<>();
-        for (Client client : clients) clientNames.add(client.getName());
-        clientInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, clientNames));
+        ArrayAdapter<String> clientAdapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_dropdown_item_1line, clientNames);
+        clientInput.setAdapter(clientAdapter);
         clientInput.setOnClickListener(v -> clientInput.showDropDown());
         clientInput.setOnItemClickListener((parent, row, position, id) -> {
             Client client = clients.get(position);
+            selectedClientId[0] = client.getId();
             if (text(billing).isEmpty()) billing.setText(client.getName());
         });
 
@@ -81,10 +86,33 @@ public class AddEventFragment extends Fragment {
         campaignButton.setOnClickListener(v -> { selectedType[0] = EventType.CAMPAIGN; styleTypes(eventButton, campaignButton, false); });
         styleTypes(eventButton, campaignButton, true);
         view.findViewById(R.id.buttonAddEventBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
+        saveButton.setEnabled(false);
+
+        clientRepository.getAllClients(new ClientRepository.Callback<List<Client>>() {
+            @Override public void onSuccess(List<Client> loadedClients) {
+                if (!isAdded() || getView() != view) return;
+                clients.clear();
+                clients.addAll(loadedClients);
+                clientNames.clear();
+                for (Client client : clients) clientNames.add(client.getName());
+                clientAdapter.notifyDataSetChanged();
+                clientsLoaded[0] = true;
+                if (existingEvent[0] != null) {
+                    selectedClientId[0] = existingEvent[0].getClientId();
+                    selectClient(clientInput, clients, existingEvent[0].getClientId());
+                }
+                saveButton.setEnabled(eventLoaded[0]);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != view) return;
+                Toast.makeText(requireContext(), R.string.clients_load_error,
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
 
         if (editMode) {
             formTitle.setText(R.string.edit_event);
-            saveButton.setEnabled(false);
             eventRepository.getEventById(eventId, new EventRepository.Callback<Event>() {
                 @Override public void onSuccess(Event loadedEvent) {
                     if (!isAdded() || getView() != view) return;
@@ -95,6 +123,8 @@ public class AddEventFragment extends Fragment {
                         return;
                     }
                     existingEvent[0] = loadedEvent;
+                    eventLoaded[0] = true;
+                    selectedClientId[0] = loadedEvent.getClientId();
                     selectedType[0] = loadedEvent.getType();
                     start[0] = loadedEvent.getStartDate();
                     end[0] = loadedEvent.getEndDate() == null
@@ -103,11 +133,8 @@ public class AddEventFragment extends Fragment {
                     startInput.setText(start[0].format(displayDate));
                     endInput.setText(end[0].format(displayDate));
                     location.setText(loadedEvent.getLocation());
-                    for (int i = 0; i < clients.size(); i++) {
-                        if (clients.get(i).getId().equals(loadedEvent.getClientId())) {
-                            clientInput.setText(clientNames.get(i), false);
-                            break;
-                        }
+                    if (clientsLoaded[0]) {
+                        selectClient(clientInput, clients, loadedEvent.getClientId());
                     }
                     billing.setText(loadedEvent.getBillingEntity());
                     po.setText(loadedEvent.getPoNumber());
@@ -115,7 +142,7 @@ public class AddEventFragment extends Fragment {
                     notes.setText(loadedEvent.getNotes());
                     styleTypes(eventButton, campaignButton,
                             selectedType[0] == EventType.EVENT);
-                    saveButton.setEnabled(true);
+                    saveButton.setEnabled(clientsLoaded[0]);
                 }
 
                 @Override public void onError(@NonNull Exception error) {
@@ -128,11 +155,7 @@ public class AddEventFragment extends Fragment {
         }
 
         saveButton.setOnClickListener(v -> {
-            int clientIndex = clientNames.indexOf(clientInput.getText().toString());
-            String clientId = clientIndex >= 0
-                    ? clients.get(clientIndex).getId()
-                    : existingEvent[0] == null ? null : existingEvent[0].getClientId();
-            if (text(name).isEmpty() || text(location).isEmpty() || clientId == null
+            if (text(name).isEmpty() || text(location).isEmpty() || selectedClientId[0] == null
                     || end[0].isBefore(start[0])) {
                 Toast.makeText(requireContext(), R.string.invalid_new_event, Toast.LENGTH_SHORT).show();
                 return;
@@ -141,7 +164,7 @@ public class AddEventFragment extends Fragment {
                     ? EventStatus.CURRENT : existingEvent[0].getStatus();
             boolean completed = existingEvent[0] != null && existingEvent[0].isCompleted();
             Event event = new Event(eventId, text(name), selectedType[0], start[0], end[0],
-                    text(location), status, clientId, text(billing), text(po),
+                    text(location), status, selectedClientId[0], text(billing), text(po),
                     text(terms), text(notes), completed);
             saveButton.setEnabled(false);
             Task<Void> saveTask = editMode
@@ -178,6 +201,15 @@ public class AddEventFragment extends Fragment {
         campaign.setBackgroundTintList(requireContext().getColorStateList(isEvent ? R.color.funky_surface : R.color.funky_completed));
         campaign.setStrokeColorResource(isEvent ? R.color.funky_border : R.color.funky_mint);
         campaign.setTextColor(requireContext().getColor(isEvent ? R.color.funky_text_secondary : R.color.funky_completed_text));
+    }
+
+    private void selectClient(AutoCompleteTextView input, List<Client> clients, String clientId) {
+        for (Client client : clients) {
+            if (client.getId().equals(clientId)) {
+                input.setText(client.getName(), false);
+                return;
+            }
+        }
     }
 
     private String text(TextInputEditText input) { return input.getText() == null ? "" : input.getText().toString().trim(); }
