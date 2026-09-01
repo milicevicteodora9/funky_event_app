@@ -158,7 +158,12 @@ public class EventDetailsFragment extends Fragment {
 
     private void bindActions(View view) {
         view.findViewById(R.id.buttonBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
-        view.findViewById(R.id.buttonEditEvent).setOnClickListener(v -> showToast(R.string.edit_event_later));
+        view.findViewById(R.id.buttonEditEvent).setOnClickListener(v -> {
+            Bundle arguments = new Bundle();
+            arguments.putString("eventId", event.getId());
+            Navigation.findNavController(v).navigate(
+                    R.id.action_eventDetailsFragment_to_addEventFragment, arguments);
+        });
         view.findViewById(R.id.buttonEditBilling).setOnClickListener(v -> showToast(R.string.edit_billing_later));
         view.findViewById(R.id.buttonCompleteEvent).setOnClickListener(v -> toggleCompleted());
         view.findViewById(R.id.buttonPdfQuote).setOnClickListener(v -> generateAndShareQuote());

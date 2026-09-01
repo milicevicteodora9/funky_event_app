@@ -38,6 +38,18 @@ public final class EventRepository {
 
     public Task<Void> createEvent(@NonNull Event event) {
         DocumentReference document = firestore.collection("events").document();
+        return document.set(eventData(event))
+                .addOnSuccessListener(unused -> event.setId(document.getId()));
+    }
+
+    public Task<Void> updateEvent(@NonNull Event event) {
+        if (event.getId() == null || event.getId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Event ID is required for update");
+        }
+        return firestore.collection("events").document(event.getId()).update(eventData(event));
+    }
+
+    private Map<String, Object> eventData(Event event) {
         Map<String, Object> data = new HashMap<>();
         data.put("name", event.getName());
         data.put("type", event.getType().name());
@@ -51,8 +63,7 @@ public final class EventRepository {
         data.put("paymentTerms", event.getPaymentTerms());
         data.put("notes", event.getNotes());
         data.put("completed", event.isCompleted());
-        return document.set(data)
-                .addOnSuccessListener(unused -> event.setId(document.getId()));
+        return data;
     }
 
     public void getAllEvents(@NonNull Callback<List<Event>> callback) {

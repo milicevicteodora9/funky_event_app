@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +18,7 @@ import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.EventType;
 import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import java.time.LocalDate;
@@ -44,10 +46,15 @@ public class AddEventFragment extends Fragment {
         TextInputEditText notes = view.findViewById(R.id.inputNewEventNotes);
         MaterialButton eventButton = view.findViewById(R.id.buttonNewEventTypeEvent);
         MaterialButton campaignButton = view.findViewById(R.id.buttonNewEventTypeCampaign);
+        MaterialButton saveButton = view.findViewById(R.id.buttonSaveNewEvent);
+        TextView formTitle = view.findViewById(R.id.textEventFormTitle);
+        String eventId = getArguments() == null ? null : getArguments().getString("eventId");
+        boolean editMode = eventId != null;
 
         EventType[] selectedType = {EventType.EVENT};
         LocalDate[] start = {LocalDate.now()};
         LocalDate[] end = {LocalDate.now()};
+        Event[] existingEvent = {null};
         startInput.setText(start[0].format(displayDate));
         endInput.setText(end[0].format(displayDate));
         startInput.setOnClickListener(v -> pickDate(start[0], date -> {
@@ -74,29 +81,85 @@ public class AddEventFragment extends Fragment {
         campaignButton.setOnClickListener(v -> { selectedType[0] = EventType.CAMPAIGN; styleTypes(eventButton, campaignButton, false); });
         styleTypes(eventButton, campaignButton, true);
         view.findViewById(R.id.buttonAddEventBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
-        MaterialButton saveButton = view.findViewById(R.id.buttonSaveNewEvent);
+
+        if (editMode) {
+            formTitle.setText(R.string.edit_event);
+            saveButton.setEnabled(false);
+            eventRepository.getEventById(eventId, new EventRepository.Callback<Event>() {
+                @Override public void onSuccess(Event loadedEvent) {
+                    if (!isAdded() || getView() != view) return;
+                    if (loadedEvent == null) {
+                        Toast.makeText(requireContext(), R.string.event_not_found,
+                                Toast.LENGTH_SHORT).show();
+                        Navigation.findNavController(view).popBackStack();
+                        return;
+                    }
+                    existingEvent[0] = loadedEvent;
+                    selectedType[0] = loadedEvent.getType();
+                    start[0] = loadedEvent.getStartDate();
+                    end[0] = loadedEvent.getEndDate() == null
+                            ? loadedEvent.getStartDate() : loadedEvent.getEndDate();
+                    name.setText(loadedEvent.getName());
+                    startInput.setText(start[0].format(displayDate));
+                    endInput.setText(end[0].format(displayDate));
+                    location.setText(loadedEvent.getLocation());
+                    for (int i = 0; i < clients.size(); i++) {
+                        if (clients.get(i).getId().equals(loadedEvent.getClientId())) {
+                            clientInput.setText(clientNames.get(i), false);
+                            break;
+                        }
+                    }
+                    billing.setText(loadedEvent.getBillingEntity());
+                    po.setText(loadedEvent.getPoNumber());
+                    terms.setText(loadedEvent.getPaymentTerms());
+                    notes.setText(loadedEvent.getNotes());
+                    styleTypes(eventButton, campaignButton,
+                            selectedType[0] == EventType.EVENT);
+                    saveButton.setEnabled(true);
+                }
+
+                @Override public void onError(@NonNull Exception error) {
+                    if (!isAdded() || getView() != view) return;
+                    Toast.makeText(requireContext(), R.string.events_load_error,
+                            Toast.LENGTH_SHORT).show();
+                    Navigation.findNavController(view).popBackStack();
+                }
+            });
+        }
+
         saveButton.setOnClickListener(v -> {
             int clientIndex = clientNames.indexOf(clientInput.getText().toString());
-            if (text(name).isEmpty() || text(location).isEmpty() || clientIndex < 0 || end[0].isBefore(start[0])) {
+            String clientId = clientIndex >= 0
+                    ? clients.get(clientIndex).getId()
+                    : existingEvent[0] == null ? null : existingEvent[0].getClientId();
+            if (text(name).isEmpty() || text(location).isEmpty() || clientId == null
+                    || end[0].isBefore(start[0])) {
                 Toast.makeText(requireContext(), R.string.invalid_new_event, Toast.LENGTH_SHORT).show();
                 return;
             }
-            Client client = clients.get(clientIndex);
-            Event event = new Event(null, text(name), selectedType[0], start[0], end[0],
-                    text(location), EventStatus.CURRENT, client.getId(), text(billing), text(po),
-                    text(terms), text(notes), false);
+            EventStatus status = existingEvent[0] == null
+                    ? EventStatus.CURRENT : existingEvent[0].getStatus();
+            boolean completed = existingEvent[0] != null && existingEvent[0].isCompleted();
+            Event event = new Event(eventId, text(name), selectedType[0], start[0], end[0],
+                    text(location), status, clientId, text(billing), text(po),
+                    text(terms), text(notes), completed);
             saveButton.setEnabled(false);
-            eventRepository.createEvent(event)
+            Task<Void> saveTask = editMode
+                    ? eventRepository.updateEvent(event)
+                    : eventRepository.createEvent(event);
+            saveTask
                     .addOnSuccessListener(unused -> {
                         if (!isAdded() || getView() != view) return;
-                        Toast.makeText(requireContext(), R.string.new_event_saved,
+                        Toast.makeText(requireContext(), editMode
+                                        ? R.string.event_updated : R.string.new_event_saved,
                                 Toast.LENGTH_SHORT).show();
                         Navigation.findNavController(view).popBackStack();
                     })
                     .addOnFailureListener(error -> {
                         if (!isAdded() || getView() != view) return;
                         saveButton.setEnabled(true);
-                        Toast.makeText(requireContext(), R.string.event_save_error,
+                        Toast.makeText(requireContext(), editMode
+                                        ? R.string.event_update_error : R.string.event_save_error,
                                 Toast.LENGTH_SHORT).show();
                     });
         });
