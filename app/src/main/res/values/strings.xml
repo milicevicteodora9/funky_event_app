@@ -192,6 +192,9 @@
     <string name="received_amount_saved">Primljeni iznos je sačuvan</string>
     <string name="received_amount_save_failed">Primljeni iznos nije moguće sačuvati</string>
     <string name="invalid_received_amount">Unesite ispravan iznos</string>
+    <string name="add_cashbox_expense">Add cashbox expense</string>
+    <string name="cashbox_expense_saved">Rashod je uspešno dodat</string>
+    <string name="cashbox_expense_save_failed">Rashod nije moguće sačuvati</string>
     <string name="received_value">RECEIVED\n%1$s EUR</string>
     <string name="spent_value">SPENT\n%1$s EUR</string>
     <string name="balance_value">BALANCE\n%1$s EUR</string>

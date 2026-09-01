@@ -110,6 +110,54 @@ public final class CashboxRepository {
                 .addOnFailureListener(callback::onError);
     }
 
+    public void createExpense(@NonNull CashboxTransaction expense, @NonNull Callback<Void> callback) {
+        if (expense.getTransactionType() != TransactionType.EXPENSE
+                || expense.getAmount() == null || expense.getAmount().signum() <= 0
+                || expense.getDescription() == null || expense.getDescription().trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("Valid expense data is required"));
+            return;
+        }
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError(new IllegalStateException("Authenticated user is required"));
+            return;
+        }
+
+        String userId = user.getUid();
+        com.google.firebase.firestore.DocumentReference cashboxDocument =
+                firestore.collection("cashboxes").document(userId);
+        com.google.firebase.firestore.DocumentReference transactionDocument =
+                cashboxDocument.collection("transactions").document();
+        Map<String, Object> data = expenseData(expense);
+        firestore.runTransaction(transaction -> {
+            if (!transaction.get(cashboxDocument).exists()) {
+                throw new IllegalStateException("Cashbox must be initialized before adding expenses");
+            }
+            transaction.set(transactionDocument, data);
+            return null;
+        }).addOnSuccessListener(unused -> {
+            expense.setId(transactionDocument.getId());
+            expense.setCashboxId(userId);
+            callback.onSuccess(null);
+        }).addOnFailureListener(callback::onError);
+    }
+
+    private Map<String, Object> expenseData(CashboxTransaction expense) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("type", TransactionType.EXPENSE.name());
+        data.put("amount", expense.getAmount().doubleValue());
+        data.put("description", expense.getDescription().trim());
+        data.put("eventId", expense.getEventId());
+        data.put("categoryId", expense.getCategoryId());
+        data.put("receiptUri", expense.getReceiptId());
+        LocalDate date = expense.getDate() == null ? LocalDate.now(ZoneOffset.UTC) : expense.getDate();
+        data.put("createdAt", new Timestamp(Date.from(date.atStartOfDay(ZoneOffset.UTC).toInstant())));
+        data.put("currency", expense.getCurrency().name());
+        data.put("exchangeRate", expense.getExchangeRate().doubleValue());
+        data.put("amountInEur", expense.getAmountInEur().doubleValue());
+        return data;
+    }
+
     private void loadTransactions(String userId, Cashbox cashbox, Callback<CashboxData> callback) {
         firestore.collection("cashboxes").document(userId).collection("transactions").get()
                 .addOnSuccessListener(snapshot -> {

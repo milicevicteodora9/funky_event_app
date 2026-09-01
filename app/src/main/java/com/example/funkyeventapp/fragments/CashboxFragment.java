@@ -35,11 +35,9 @@ import com.example.funkyeventapp.models.Currency;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.ExpensePurpose;
 import com.example.funkyeventapp.models.DocumentSource;
-import com.example.funkyeventapp.models.Receipt;
-import com.example.funkyeventapp.models.ScannedDocument;
 import com.example.funkyeventapp.models.TransactionType;
 import com.example.funkyeventapp.repositories.CashboxRepository;
-import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.services.AuthService;
 import com.google.android.material.button.MaterialButton;
@@ -59,8 +57,8 @@ import java.io.File;
 import java.io.IOException;
 
 public class CashboxFragment extends Fragment {
-    private final MockDataRepository repository = MockDataRepository.getInstance();
     private final CashboxRepository cashboxRepository = CashboxRepository.getInstance();
+    private final EventRepository eventRepository = EventRepository.getInstance();
     private final DecimalFormat money = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private final DateTimeFormatter inputDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private Cashbox cashbox;
@@ -125,7 +123,7 @@ public class CashboxFragment extends Fragment {
         list.setLayoutManager(new LinearLayoutManager(requireContext()));
         list.setAdapter(adapter);
         view.findViewById(R.id.buttonCashboxBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
-        view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> showReceivedAmountDialog());
+        view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> loadEventsAndShowExpenseDialog());
         view.findViewById(R.id.textCashboxReceived).setOnClickListener(v -> showReceivedAmountDialog());
         view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> showReadOnlyMessage());
         view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> showReadOnlyMessage());
@@ -166,9 +164,7 @@ public class CashboxFragment extends Fragment {
     }
 
     private void saveSelectedDocumentAndOpenReview(Uri uri, String fileName, String mimeType, DocumentSource source) {
-        ScannedDocument document = new ScannedDocument(null, fileName, uri.toString(), mimeType, source, LocalDateTime.now());
-        repository.saveScannedDocument(document);
-        openReceiptReview(source, document.getId());
+        showReadOnlyMessage();
     }
 
     private String queryDisplayName(Uri uri) {
@@ -183,13 +179,7 @@ public class CashboxFragment extends Fragment {
     }
 
     private void showReceiptDetails(CashboxTransaction transaction) {
-        Receipt receipt = repository.getReceiptById(transaction.getReceiptId());
-        if (receipt == null) return;
-        String details = getString(R.string.receipt_details, receipt.getSeller(), receipt.getSellerTaxId(),
-                receipt.getReceiptNumber(), receipt.getIssueDate().format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)),
-                money.format(receipt.getTotalAmount()), receipt.getCurrency().name(), receipt.getProcessingStatus().name());
-        new MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.receipt_review).setMessage(details)
-                .setPositiveButton(android.R.string.ok, null).show();
+        showReadOnlyMessage();
     }
 
     private void refreshCashbox() {
@@ -283,10 +273,23 @@ public class CashboxFragment extends Fragment {
         Toast.makeText(requireContext(), R.string.cashbox_changes_not_available, Toast.LENGTH_SHORT).show();
     }
 
-    private void showEntryDialog(@Nullable CashboxTransaction existing) {
+    private void loadEventsAndShowExpenseDialog() {
+        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+            @Override public void onSuccess(List<Event> events) {
+                if (!isAdded() || getView() != root) return;
+                showExpenseDialog(events);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != root) return;
+                Toast.makeText(requireContext(), R.string.events_load_error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showExpenseDialog(List<Event> assignedEvents) {
         View form = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_cashbox_entry, null, false);
-        ((TextView) form.findViewById(R.id.textCashboxEntryDialogTitle)).setText(
-                existing == null ? R.string.add_cashbox_entry : R.string.edit_cashbox_entry);
+        ((TextView) form.findViewById(R.id.textCashboxEntryDialogTitle)).setText(R.string.add_cashbox_expense);
         MaterialButton received = form.findViewById(R.id.buttonEntryReceived);
         MaterialButton spent = form.findViewById(R.id.buttonEntrySpent);
         TextInputEditText amount = form.findViewById(R.id.inputEntryAmount);
@@ -296,32 +299,22 @@ public class CashboxFragment extends Fragment {
         TextInputEditText description = form.findViewById(R.id.inputEntryDescription);
         AutoCompleteTextView currency = form.findViewById(R.id.inputEntryCurrency);
         AutoCompleteTextView eventInput = form.findViewById(R.id.inputEntryEvent);
-        TransactionType[] selectedType = {existing == null ? TransactionType.INCOME : existing.getTransactionType()};
-        LocalDate[] selectedDate = {existing == null ? LocalDate.now() : existing.getDate()};
+        TransactionType[] selectedType = {TransactionType.EXPENSE};
+        LocalDate[] selectedDate = {LocalDate.now()};
         Currency[] currencies = Currency.values();
         currency.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, currencies));
         currency.setOnClickListener(v -> currency.showDropDown());
-        Currency initialCurrency = existing == null ? Currency.RSD : existing.getCurrency();
+        Currency initialCurrency = Currency.RSD;
         currency.setText(initialCurrency.name(), false);
-        List<Event> assignedEvents = repository.getAllEvents();
         List<String> eventLabels = new ArrayList<>();
         eventLabels.add(getString(R.string.general_expenses));
         for (Event event : assignedEvents) eventLabels.add(event.getName());
         eventInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, eventLabels));
         eventInput.setOnClickListener(v -> eventInput.showDropDown());
-        int selectedEventIndex = 0;
-        if (existing != null && existing.getEventId() != null)
-            for (int i = 0; i < assignedEvents.size(); i++) if (existing.getEventId().equals(assignedEvents.get(i).getId())) selectedEventIndex = i + 1;
-        eventInput.setText(eventLabels.get(selectedEventIndex), false);
-        if (existing != null) {
-            amount.setText(existing.getAmount().toPlainString());
-            rateInput.setText(existing.getExchangeRate().toPlainString());
-            eurInput.setText(existing.getAmountInEur().toPlainString());
-            description.setText(existing.getDescription() == null || existing.getDescription().trim().isEmpty()
-                    ? existing.getName() : existing.getDescription());
-        } else {
-            rateInput.setText(exchangeRate(initialCurrency).toPlainString());
-        }
+        int[] selectedEventPosition = {0};
+        eventInput.setOnItemClickListener((parent, selectedView, position, id) -> selectedEventPosition[0] = position);
+        eventInput.setText(eventLabels.get(0), false);
+        rateInput.setText(exchangeRate(initialCurrency).toPlainString());
         boolean[] syncingEur = {false};
         boolean[] eurManuallyEdited = {false};
         TextWatcher calculationWatcher = new TextWatcher() {
@@ -351,9 +344,9 @@ public class CashboxFragment extends Fragment {
             selectedDate[0] = LocalDate.of(year, month + 1, day);
             date.setText(selectedDate[0].format(inputDate));
         }, selectedDate[0].getYear(), selectedDate[0].getMonthValue() - 1, selectedDate[0].getDayOfMonth()).show());
-        received.setOnClickListener(v -> { selectedType[0] = TransactionType.INCOME; styleTypeButtons(received, spent, true); });
+        received.setEnabled(false);
         spent.setOnClickListener(v -> { selectedType[0] = TransactionType.EXPENSE; styleTypeButtons(received, spent, false); });
-        styleTypeButtons(received, spent, selectedType[0] == TransactionType.INCOME);
+        styleTypeButtons(received, spent, false);
         currency.setOnItemClickListener((parent, view, position, id) -> {
             BigDecimal newRate = exchangeRate(currencies[position]);
             rateInput.setText(newRate.toPlainString());
@@ -361,7 +354,8 @@ public class CashboxFragment extends Fragment {
             catch (Exception ignored) { }
         });
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext()).setView(form).create();
-        form.findViewById(R.id.buttonSaveCashboxEntry).setOnClickListener(v -> {
+        View saveButton = form.findViewById(R.id.buttonSaveCashboxEntry);
+        saveButton.setOnClickListener(v -> {
             try {
                 String entryDescription = text(description);
                 BigDecimal originalAmount = new BigDecimal(text(amount).replace(',', '.'));
@@ -372,29 +366,34 @@ public class CashboxFragment extends Fragment {
                 BigDecimal eur = text(eurInput).isEmpty() ? originalAmount.divide(rate, 2, RoundingMode.HALF_UP)
                         : new BigDecimal(text(eurInput).replace(',', '.'));
                 if (eur.signum() <= 0) throw new NumberFormatException();
-                int eventPosition = eventLabels.indexOf(eventInput.getText().toString());
+                int eventPosition = selectedEventPosition[0];
                 Event selectedEvent = eventPosition > 0 ? assignedEvents.get(eventPosition - 1) : null;
-                if (selectedType[0] == TransactionType.EXPENSE && eventPosition < 0) throw new IllegalArgumentException();
-                CashboxTransaction saved = new CashboxTransaction(existing == null ? null : existing.getId(), cashbox.getId(), entryDescription, entryDescription, originalAmount,
+                if (eventPosition < 0) throw new IllegalArgumentException();
+                CashboxTransaction saved = new CashboxTransaction(null, cashbox.getId(), entryDescription, entryDescription, originalAmount,
                         selectedCurrency, rate, eur, selectedDate[0], selectedType[0], selectedEvent == null ? ExpensePurpose.GENERAL : ExpensePurpose.EVENT,
-                        selectedEvent == null ? null : selectedEvent.getId(), existing == null ? null : existing.getReceiptId());
-                if (existing != null) saved.setCategoryId(existing.getCategoryId());
-                if (existing == null) repository.addCashboxTransaction(saved); else repository.updateCashboxTransaction(saved);
-                refreshCashbox();
-                dialog.dismiss();
-                Toast.makeText(requireContext(), existing == null ? R.string.cashbox_entry_saved : R.string.cashbox_entry_updated, Toast.LENGTH_SHORT).show();
+                        selectedEvent == null ? null : selectedEvent.getId(), null);
+                saveButton.setEnabled(false);
+                cashboxRepository.createExpense(saved, new CashboxRepository.Callback<Void>() {
+                    @Override public void onSuccess(Void ignored) {
+                        if (!isAdded() || getView() != root) return;
+                        dialog.dismiss();
+                        Toast.makeText(requireContext(), R.string.cashbox_expense_saved, Toast.LENGTH_SHORT).show();
+                        refreshCashbox();
+                    }
+
+                    @Override public void onError(@NonNull Exception error) {
+                        if (!isAdded() || getView() != root) return;
+                        saveButton.setEnabled(true);
+                        Toast.makeText(requireContext(), R.string.cashbox_expense_save_failed, Toast.LENGTH_SHORT).show();
+                    }
+                });
             } catch (Exception exception) { Toast.makeText(requireContext(), R.string.invalid_cashbox_entry, Toast.LENGTH_SHORT).show(); }
         });
         dialog.show();
     }
 
     private void confirmDelete(CashboxTransaction transaction) {
-        new MaterialAlertDialogBuilder(requireContext()).setMessage(R.string.delete_transaction_question)
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.delete, (dialog, which) -> {
-                    repository.deleteCashboxTransaction(transaction.getId());
-                    refreshCashbox();
-                }).show();
+        showReadOnlyMessage();
     }
 
     private void styleTypeButtons(MaterialButton received, MaterialButton spent, boolean income) {
