@@ -18,6 +18,8 @@
     <string name="edit_budget_item">Edit budget item</string>
     <string name="budget_item_updated">Budget stavka je izmenjena</string>
     <string name="budget_item_update_error">Budget stavku nije moguće izmeniti.</string>
+    <string name="budget_item_deleted">Budget stavka je obrisana</string>
+    <string name="budget_item_delete_error">Budget stavku nije moguće obrisati.</string>
     <string name="no_budget_categories">Nema dostupnih budget kategorija.</string>
     <string name="category_name">Category name</string>
     <string name="category_name_required">Unesite naziv kategorije.</string>

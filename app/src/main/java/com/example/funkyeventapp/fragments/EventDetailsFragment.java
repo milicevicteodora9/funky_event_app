@@ -393,6 +393,8 @@ public class EventDetailsFragment extends Fragment {
         TextView amount = text(money(item.getTotal()), 13, R.color.funky_text, true);
         amount.setPadding(dp(6), 0, dp(4), 0); row.addView(amount);
         row.addView(actionButton(R.drawable.ic_edit, v -> showBudgetItemDialog(requireView(), item)));
+        row.addView(actionButton(R.drawable.ic_delete,
+                v -> confirmDeleteBudgetItem(requireView(), item)));
         card.addView(row);
         budgetItemsContainer.addView(card);
     }
@@ -405,6 +407,28 @@ public class EventDetailsFragment extends Fragment {
         button.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         button.setOnClickListener(listener);
         return button;
+    }
+
+    private void confirmDeleteBudgetItem(@NonNull View root, @NonNull BudgetItem item) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(R.string.confirm_delete_item)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        budgetRepository.deleteBudgetItem(event.getId(), item.getId())
+                                .addOnSuccessListener(unused -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(),
+                                            R.string.budget_item_deleted,
+                                            Toast.LENGTH_SHORT).show();
+                                    loadBudget(root);
+                                })
+                                .addOnFailureListener(error -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(),
+                                            R.string.budget_item_delete_error,
+                                            Toast.LENGTH_SHORT).show();
+                                }))
+                .show();
     }
 
     private void showBudgetItemDialog(@NonNull View root, @Nullable BudgetItem existing) {

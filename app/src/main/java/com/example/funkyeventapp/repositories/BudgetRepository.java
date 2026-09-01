@@ -106,6 +106,11 @@ public final class BudgetRepository {
                 .collection("items").document(item.getId()).update(data);
     }
 
+    public Task<Void> deleteBudgetItem(@NonNull String eventId, @NonNull String itemId) {
+        return firestore.collection("budgets").document(eventId)
+                .collection("items").document(itemId).delete();
+    }
+
     public void getBudgetForEvent(@NonNull String eventId,
                                   @NonNull Callback<BudgetData> callback) {
         Task<DocumentSnapshot> budgetTask = firestore.collection("budgets")
