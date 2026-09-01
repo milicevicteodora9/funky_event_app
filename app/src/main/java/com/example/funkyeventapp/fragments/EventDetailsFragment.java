@@ -2,12 +2,16 @@ package com.example.funkyeventapp.fragments;
 
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,6 +24,7 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.Budget;
 import com.example.funkyeventapp.models.BudgetCategory;
 import com.example.funkyeventapp.models.BudgetItem;
+import com.example.funkyeventapp.models.BudgetItemSource;
 import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
@@ -211,7 +216,8 @@ public class EventDetailsFragment extends Fragment {
         externalTab.setOnClickListener(v -> selectBudget(BudgetType.EXTERNAL));
         internalTab.setOnClickListener(v -> selectBudget(BudgetType.INTERNAL));
         actualTab.setOnClickListener(v -> selectBudget(BudgetType.ACTUAL));
-        view.findViewById(R.id.buttonAddBudgetItem).setEnabled(false);
+        view.findViewById(R.id.buttonAddBudgetItem).setOnClickListener(v ->
+                showAddBudgetItemDialog(view));
         copyAllButton.setVisibility(View.GONE);
     }
 
@@ -295,6 +301,23 @@ public class EventDetailsFragment extends Fragment {
                 addBudgetItemCard(item);
             }
         }
+        boolean uncategorizedHeadingAdded = false;
+        for (BudgetItem item : items) {
+            boolean categoryExists = false;
+            for (BudgetCategory category : budgetCategories) {
+                if (category.getId().equals(item.getCategoryId())) {
+                    categoryExists = true;
+                    break;
+                }
+            }
+            if (!categoryExists) {
+                if (!uncategorizedHeadingAdded) {
+                    addCategoryHeading(getString(R.string.uncategorized));
+                    uncategorizedHeadingAdded = true;
+                }
+                addBudgetItemCard(item);
+            }
+        }
         copyAllButton.setVisibility(View.GONE);
     }
 
@@ -372,6 +395,226 @@ public class EventDetailsFragment extends Fragment {
         budgetItemsContainer.addView(card);
     }
 
+    private void showAddBudgetItemDialog(@NonNull View root) {
+        if (budgetCategories.isEmpty()) {
+            Toast.makeText(requireContext(), R.string.no_budget_categories,
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        LinearLayout form = new LinearLayout(requireContext());
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(20), 0, dp(20), 0);
+        TextView emptyCategories = text(getString(R.string.no_budget_categories), 12,
+                R.color.funky_text_secondary, false);
+        emptyCategories.setVisibility(budgetCategories.isEmpty() ? View.VISIBLE : View.GONE);
+        Spinner categorySpinner = new Spinner(requireContext());
+        ArrayAdapter<BudgetCategory> categoryAdapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_spinner_dropdown_item, budgetCategories);
+        categorySpinner.setAdapter(categoryAdapter);
+        EditText newCategory = field(R.string.new_category, false);
+        Button createCategory = new Button(requireContext());
+        createCategory.setText(R.string.create_category);
+        LinearLayout categoryActions = new LinearLayout(requireContext());
+        categoryActions.setOrientation(LinearLayout.HORIZONTAL);
+        Button renameCategory = new Button(requireContext());
+        renameCategory.setText(R.string.rename_category);
+        Button deleteCategory = new Button(requireContext());
+        deleteCategory.setText(R.string.delete_category);
+        categoryActions.addView(renameCategory,
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        categoryActions.addView(deleteCategory,
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        EditText description = field(R.string.description, false);
+        EditText quantity = field(R.string.quantity, true);
+        EditText days = field(R.string.days, true);
+        EditText rate = field(R.string.daily_rate, true);
+        EditText notes = field(R.string.notes, false);
+        form.addView(emptyCategories);
+        form.addView(categorySpinner);
+        form.addView(newCategory);
+        form.addView(createCategory);
+        form.addView(categoryActions);
+        form.addView(description);
+        form.addView(quantity);
+        form.addView(days);
+        form.addView(rate);
+        form.addView(notes);
+
+        createCategory.setOnClickListener(v -> createBudgetCategory(root, newCategory,
+                categorySpinner, categoryAdapter, emptyCategories, createCategory));
+        renameCategory.setOnClickListener(v -> {
+            BudgetCategory selected = (BudgetCategory) categorySpinner.getSelectedItem();
+            if (selected == null) {
+                Toast.makeText(requireContext(), R.string.no_budget_categories,
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showRenameBudgetCategoryDialog(root, selected, categoryAdapter);
+        });
+        deleteCategory.setOnClickListener(v -> {
+            BudgetCategory selected = (BudgetCategory) categorySpinner.getSelectedItem();
+            if (selected == null) {
+                Toast.makeText(requireContext(), R.string.no_budget_categories,
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            confirmDeleteBudgetCategory(root, selected, categoryAdapter, emptyCategories);
+        });
+
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.add_item)
+                .setView(form)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(
+                androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            BigDecimal parsedQuantity = parseDecimal(quantity.getText().toString(), null);
+            BigDecimal parsedDays = parseDecimal(days.getText().toString(), null);
+            BigDecimal parsedRate = parseDecimal(rate.getText().toString(), null);
+            if (description.getText().toString().trim().isEmpty()
+                    || parsedQuantity == null || parsedDays == null || parsedRate == null
+                    || parsedQuantity.signum() < 0 || parsedDays.signum() < 0
+                    || parsedRate.signum() < 0) {
+                Toast.makeText(requireContext(), R.string.invalid_budget_item,
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            BudgetCategory category = (BudgetCategory) categorySpinner.getSelectedItem();
+            if (category == null) {
+                Toast.makeText(requireContext(), R.string.no_budget_categories,
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            BudgetItem item = new BudgetItem(null, event.getId(), selectedBudgetType,
+                    category.getId(), description.getText().toString().trim(),
+                    parsedQuantity, parsedDays, parsedRate,
+                    notes.getText().toString().trim(), BudgetItemSource.MANUAL,
+                    null, null);
+            View saveButton = dialog.getButton(
+                    androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
+            saveButton.setEnabled(false);
+            budgetRepository.createBudgetItem(item)
+                    .addOnSuccessListener(unused -> {
+                        if (!isAdded() || getView() != root) return;
+                        dialog.dismiss();
+                        Toast.makeText(requireContext(), R.string.budget_item_saved,
+                                Toast.LENGTH_SHORT).show();
+                        loadBudget(root);
+                    })
+                    .addOnFailureListener(error -> {
+                        if (!isAdded() || getView() != root) return;
+                        saveButton.setEnabled(true);
+                        Toast.makeText(requireContext(), R.string.budget_item_save_error,
+                                Toast.LENGTH_SHORT).show();
+                    });
+        }));
+        dialog.show();
+    }
+
+    private void createBudgetCategory(@NonNull View root, @NonNull EditText input,
+                                      @NonNull Spinner spinner,
+                                      @NonNull ArrayAdapter<BudgetCategory> adapter,
+                                      @NonNull TextView emptyCategories,
+                                      @NonNull Button createButton) {
+        String name = input.getText().toString().trim();
+        if (name.isEmpty()) {
+            input.setError(getString(R.string.category_name_required));
+            return;
+        }
+        BudgetCategory category = new BudgetCategory(null, name);
+        createButton.setEnabled(false);
+        budgetRepository.createBudgetCategory(category)
+                .addOnSuccessListener(unused -> {
+                    if (!isAdded() || getView() != root) return;
+                    budgetCategories.add(category);
+                    adapter.notifyDataSetChanged();
+                    spinner.setSelection(budgetCategories.size() - 1);
+                    emptyCategories.setVisibility(View.GONE);
+                    input.setText("");
+                    createButton.setEnabled(true);
+                    renderBudget();
+                    Toast.makeText(requireContext(), R.string.category_created,
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(error -> {
+                    if (!isAdded() || getView() != root) return;
+                    createButton.setEnabled(true);
+                    Toast.makeText(requireContext(), R.string.category_save_error,
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void showRenameBudgetCategoryDialog(@NonNull View root,
+                                                @NonNull BudgetCategory category,
+                                                @NonNull ArrayAdapter<BudgetCategory> adapter) {
+        EditText input = field(R.string.category_name, false);
+        input.setText(category.getName());
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.rename_category)
+                .setView(input)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(
+                androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String name = input.getText().toString().trim();
+            if (name.isEmpty()) {
+                input.setError(getString(R.string.category_name_required));
+                return;
+            }
+            BudgetCategory updated = new BudgetCategory(category.getId(), name);
+            View saveButton = dialog.getButton(
+                    androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
+            saveButton.setEnabled(false);
+            budgetRepository.updateBudgetCategory(updated)
+                    .addOnSuccessListener(unused -> {
+                        if (!isAdded() || getView() != root) return;
+                        category.setName(name);
+                        adapter.notifyDataSetChanged();
+                        renderBudget();
+                        dialog.dismiss();
+                        Toast.makeText(requireContext(), R.string.category_updated,
+                                Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(error -> {
+                        if (!isAdded() || getView() != root) return;
+                        saveButton.setEnabled(true);
+                        Toast.makeText(requireContext(), R.string.category_update_error,
+                                Toast.LENGTH_SHORT).show();
+                    });
+        }));
+        dialog.show();
+    }
+
+    private void confirmDeleteBudgetCategory(@NonNull View root,
+                                             @NonNull BudgetCategory category,
+                                             @NonNull ArrayAdapter<BudgetCategory> adapter,
+                                             @NonNull TextView emptyCategories) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(getString(R.string.delete_category_question, category.getName()))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        budgetRepository.deleteBudgetCategory(category.getId())
+                                .addOnSuccessListener(unused -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    budgetCategories.remove(category);
+                                    adapter.notifyDataSetChanged();
+                                    emptyCategories.setVisibility(budgetCategories.isEmpty()
+                                            ? View.VISIBLE : View.GONE);
+                                    renderBudget();
+                                    Toast.makeText(requireContext(), R.string.category_deleted,
+                                            Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(error -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(), R.string.category_delete_error,
+                                            Toast.LENGTH_SHORT).show();
+                                }))
+                .show();
+    }
+
     private void generateAndShareQuote() {
         try {
             File pdfFile = pdfService.generateQuote(requireContext(), event);
@@ -385,6 +628,17 @@ public class EventDetailsFragment extends Fragment {
     private TextView text(String value, float size, int color, boolean bold) {
         TextView text = new TextView(requireContext()); text.setText(value); text.setTextSize(size); text.setTextColor(requireContext().getColor(color));
         if (bold) text.setTypeface(text.getTypeface(), android.graphics.Typeface.BOLD); return text;
+    }
+
+    private EditText field(int hint, boolean numeric) {
+        EditText field = new EditText(requireContext());
+        field.setHint(hint);
+        field.setTextSize(14);
+        field.setSingleLine(true);
+        field.setInputType(numeric
+                ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL
+                : InputType.TYPE_CLASS_TEXT);
+        return field;
     }
 
     private void toggleCompleted() {
@@ -402,6 +656,7 @@ public class EventDetailsFragment extends Fragment {
     }
     private String money(BigDecimal value) { return moneyFormat.format(value.setScale(2, RoundingMode.HALF_UP)) + " €"; }
     private String stripZeros(BigDecimal value) { return value == null ? "" : value.stripTrailingZeros().toPlainString(); }
+    private BigDecimal parseDecimal(String value, BigDecimal fallback) { try { return new BigDecimal(value.trim().replace(',', '.')); } catch (Exception e) { return fallback; } }
     private String valueOrDash(String value) { return value == null || value.trim().isEmpty() ? "—" : value; }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private void showToast(int message) { Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show(); }

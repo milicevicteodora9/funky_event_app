@@ -10,15 +10,16 @@ import com.example.funkyeventapp.models.BudgetType;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Read access for an event budget and its items/categories. */
 public final class BudgetRepository {
@@ -50,6 +51,46 @@ public final class BudgetRepository {
 
     public static BudgetRepository getInstance() { return INSTANCE; }
 
+    public Task<Void> createBudgetCategory(@NonNull BudgetCategory category) {
+        DocumentReference document = firestore.collection("budgetCategories").document();
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", category.getName());
+        return document.set(data)
+                .addOnSuccessListener(unused -> category.setId(document.getId()));
+    }
+
+    public Task<Void> updateBudgetCategory(@NonNull BudgetCategory category) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", category.getName());
+        return firestore.collection("budgetCategories").document(category.getId()).update(data);
+    }
+
+    public Task<Void> deleteBudgetCategory(@NonNull String categoryId) {
+        return firestore.collection("budgetCategories").document(categoryId).delete();
+    }
+
+    public Task<Void> createBudgetItem(@NonNull BudgetItem item) {
+        if (item.getEventId() == null || item.getEventId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Event ID is required");
+        }
+        DocumentReference budgetDocument = firestore.collection("budgets")
+                .document(item.getEventId());
+        DocumentReference itemDocument = budgetDocument.collection("items").document();
+        return firestore.<Void>runTransaction(transaction -> {
+                    DocumentSnapshot existingBudget = transaction.get(budgetDocument);
+                    if (!existingBudget.exists()) {
+                        Map<String, Object> budgetData = new HashMap<>();
+                        budgetData.put("eventId", item.getEventId());
+                        budgetData.put("includeVat", false);
+                        budgetData.put("discountPercentage", 0.0);
+                        transaction.set(budgetDocument, budgetData);
+                    }
+                    transaction.set(itemDocument, itemData(item));
+                    return null;
+                })
+                .addOnSuccessListener(unused -> item.setId(itemDocument.getId()));
+    }
+
     public void getBudgetForEvent(@NonNull String eventId,
                                   @NonNull Callback<BudgetData> callback) {
         Task<DocumentSnapshot> budgetTask = firestore.collection("budgets")
@@ -71,18 +112,8 @@ public final class BudgetRepository {
                             items.add(mapItem(document, eventId));
                         }
                         List<BudgetCategory> categories = new ArrayList<>();
-                        Set<String> categoryIds = new HashSet<>();
                         for (DocumentSnapshot document : categoryDocuments.getDocuments()) {
-                            BudgetCategory category = mapCategory(document);
-                            categories.add(category);
-                            categoryIds.add(category.getId());
-                        }
-                        for (BudgetItem item : items) {
-                            if (!categoryIds.contains(item.getCategoryId())) {
-                                categories.add(new BudgetCategory(item.getCategoryId(),
-                                        item.getCategoryId()));
-                                categoryIds.add(item.getCategoryId());
-                            }
+                            categories.add(mapCategory(document));
                         }
                         callback.onSuccess(new BudgetData(budget, items, categories));
                     } catch (IllegalArgumentException | IllegalStateException error) {
@@ -99,6 +130,19 @@ public final class BudgetRepository {
         Boolean includeVat = document.getBoolean("includeVat");
         return new Budget(document.getId(), eventId, includeVat != null && includeVat,
                 decimal(document.get("discountPercentage"), BigDecimal.ZERO));
+    }
+
+    private Map<String, Object> itemData(BudgetItem item) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("budgetType", item.getBudgetType().name());
+        data.put("categoryId", item.getCategoryId());
+        data.put("description", item.getDescription());
+        data.put("quantity", item.getQuantity().doubleValue());
+        data.put("days", item.getDays().doubleValue());
+        data.put("dailyRate", item.getDailyRate().doubleValue());
+        data.put("notes", item.getNotes());
+        data.put("sourceType", item.getSourceType().name());
+        return data;
     }
 
     private BudgetItem mapItem(DocumentSnapshot document, String eventId) {
