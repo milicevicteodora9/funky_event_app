@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -217,7 +218,7 @@ public class EventDetailsFragment extends Fragment {
         internalTab.setOnClickListener(v -> selectBudget(BudgetType.INTERNAL));
         actualTab.setOnClickListener(v -> selectBudget(BudgetType.ACTUAL));
         view.findViewById(R.id.buttonAddBudgetItem).setOnClickListener(v ->
-                showAddBudgetItemDialog(view));
+                showBudgetItemDialog(view, null));
         copyAllButton.setVisibility(View.GONE);
     }
 
@@ -391,11 +392,22 @@ public class EventDetailsFragment extends Fragment {
         textColumn.addView(description); textColumn.addView(formula); row.addView(textColumn);
         TextView amount = text(money(item.getTotal()), 13, R.color.funky_text, true);
         amount.setPadding(dp(6), 0, dp(4), 0); row.addView(amount);
+        row.addView(actionButton(R.drawable.ic_edit, v -> showBudgetItemDialog(requireView(), item)));
         card.addView(row);
         budgetItemsContainer.addView(card);
     }
 
-    private void showAddBudgetItemDialog(@NonNull View root) {
+    private ImageButton actionButton(int icon, View.OnClickListener listener) {
+        ImageButton button = new ImageButton(requireContext());
+        button.setLayoutParams(new LinearLayout.LayoutParams(dp(34), dp(34)));
+        button.setPadding(dp(7), dp(7), dp(7), dp(7));
+        button.setImageResource(icon);
+        button.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        button.setOnClickListener(listener);
+        return button;
+    }
+
+    private void showBudgetItemDialog(@NonNull View root, @Nullable BudgetItem existing) {
         if (budgetCategories.isEmpty()) {
             Toast.makeText(requireContext(), R.string.no_budget_categories,
                     Toast.LENGTH_SHORT).show();
@@ -440,6 +452,20 @@ public class EventDetailsFragment extends Fragment {
         form.addView(rate);
         form.addView(notes);
 
+        if (existing != null) {
+            description.setText(existing.getDescription());
+            quantity.setText(stripZeros(existing.getQuantity()));
+            days.setText(stripZeros(existing.getDays()));
+            rate.setText(stripZeros(existing.getDailyRate()));
+            notes.setText(existing.getNotes());
+            for (int i = 0; i < budgetCategories.size(); i++) {
+                if (budgetCategories.get(i).getId().equals(existing.getCategoryId())) {
+                    categorySpinner.setSelection(i);
+                    break;
+                }
+            }
+        }
+
         createCategory.setOnClickListener(v -> createBudgetCategory(root, newCategory,
                 categorySpinner, categoryAdapter, emptyCategories, createCategory));
         renameCategory.setOnClickListener(v -> {
@@ -462,7 +488,7 @@ public class EventDetailsFragment extends Fragment {
         });
 
         androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.add_item)
+                .setTitle(existing == null ? R.string.add_item : R.string.edit_budget_item)
                 .setView(form)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.save, null)
@@ -487,26 +513,36 @@ public class EventDetailsFragment extends Fragment {
                         Toast.LENGTH_SHORT).show();
                 return;
             }
-            BudgetItem item = new BudgetItem(null, event.getId(), selectedBudgetType,
+            BudgetItem item = new BudgetItem(existing == null ? null : existing.getId(),
+                    event.getId(), existing == null ? selectedBudgetType : existing.getBudgetType(),
                     category.getId(), description.getText().toString().trim(),
                     parsedQuantity, parsedDays, parsedRate,
-                    notes.getText().toString().trim(), BudgetItemSource.MANUAL,
-                    null, null);
+                    notes.getText().toString().trim(),
+                    existing == null ? BudgetItemSource.MANUAL : existing.getSourceType(),
+                    existing == null ? null : existing.getSourceTransactionId(),
+                    existing == null ? null : existing.getSourceBudgetItemId());
             View saveButton = dialog.getButton(
                     androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
             saveButton.setEnabled(false);
-            budgetRepository.createBudgetItem(item)
+            com.google.android.gms.tasks.Task<Void> saveTask = existing == null
+                    ? budgetRepository.createBudgetItem(item)
+                    : budgetRepository.updateBudgetItem(event.getId(), item);
+            saveTask
                     .addOnSuccessListener(unused -> {
                         if (!isAdded() || getView() != root) return;
                         dialog.dismiss();
-                        Toast.makeText(requireContext(), R.string.budget_item_saved,
+                        Toast.makeText(requireContext(), existing == null
+                                        ? R.string.budget_item_saved
+                                        : R.string.budget_item_updated,
                                 Toast.LENGTH_SHORT).show();
                         loadBudget(root);
                     })
                     .addOnFailureListener(error -> {
                         if (!isAdded() || getView() != root) return;
                         saveButton.setEnabled(true);
-                        Toast.makeText(requireContext(), R.string.budget_item_save_error,
+                        Toast.makeText(requireContext(), existing == null
+                                        ? R.string.budget_item_save_error
+                                        : R.string.budget_item_update_error,
                                 Toast.LENGTH_SHORT).show();
                     });
         }));

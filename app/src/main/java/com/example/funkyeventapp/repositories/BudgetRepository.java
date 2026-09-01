@@ -91,6 +91,21 @@ public final class BudgetRepository {
                 .addOnSuccessListener(unused -> item.setId(itemDocument.getId()));
     }
 
+    public Task<Void> updateBudgetItem(@NonNull String eventId, @NonNull BudgetItem item) {
+        if (item.getId() == null || item.getId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Budget item ID is required");
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("categoryId", item.getCategoryId());
+        data.put("description", item.getDescription());
+        data.put("quantity", item.getQuantity().doubleValue());
+        data.put("days", item.getDays().doubleValue());
+        data.put("dailyRate", item.getDailyRate().doubleValue());
+        data.put("notes", item.getNotes());
+        return firestore.collection("budgets").document(eventId)
+                .collection("items").document(item.getId()).update(data);
+    }
+
     public void getBudgetForEvent(@NonNull String eventId,
                                   @NonNull Callback<BudgetData> callback) {
         Task<DocumentSnapshot> budgetTask = firestore.collection("budgets")
