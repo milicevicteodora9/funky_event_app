@@ -49,6 +49,10 @@ public final class EventRepository {
         return firestore.collection("events").document(event.getId()).update(eventData(event));
     }
 
+    public Task<Void> deleteEvent(@NonNull String eventId) {
+        return firestore.collection("events").document(eventId).delete();
+    }
+
     private Map<String, Object> eventData(Event event) {
         Map<String, Object> data = new HashMap<>();
         data.put("name", event.getName());

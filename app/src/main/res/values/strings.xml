@@ -35,6 +35,9 @@
     <string name="edit_event">Edit event</string>
     <string name="event_updated">Event je uspešno izmenjen</string>
     <string name="event_update_error">Event nije moguće izmeniti.</string>
+    <string name="confirm_delete_event">Da li želite da obrišete ovaj event?</string>
+    <string name="event_deleted">Event je obrisan</string>
+    <string name="event_delete_error">Event nije moguće obrisati.</string>
     <string name="event_details">Event details</string>
     <string name="back">Back</string>
     <string name="edit">Edit</string>

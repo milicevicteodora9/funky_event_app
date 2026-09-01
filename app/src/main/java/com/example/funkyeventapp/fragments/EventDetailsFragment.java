@@ -166,6 +166,7 @@ public class EventDetailsFragment extends Fragment {
         });
         view.findViewById(R.id.buttonEditBilling).setOnClickListener(v -> showToast(R.string.edit_billing_later));
         view.findViewById(R.id.buttonCompleteEvent).setOnClickListener(v -> toggleCompleted());
+        view.findViewById(R.id.buttonDeleteEvent).setOnClickListener(v -> confirmDeleteEvent(view));
         view.findViewById(R.id.buttonPdfQuote).setOnClickListener(v -> generateAndShareQuote());
         view.findViewById(R.id.buttonAddTeamUser).setOnClickListener(v -> showAddTeamDialog());
         externalTab.setOnClickListener(v -> selectBudget(BudgetType.EXTERNAL));
@@ -173,6 +174,27 @@ public class EventDetailsFragment extends Fragment {
         actualTab.setOnClickListener(v -> selectBudget(BudgetType.ACTUAL));
         view.findViewById(R.id.buttonAddBudgetItem).setOnClickListener(v -> showBudgetItemDialog(null));
         copyAllButton.setOnClickListener(v -> confirmCopyAll());
+    }
+
+    private void confirmDeleteEvent(@NonNull View root) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(R.string.confirm_delete_event)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (dialog, which) ->
+                        eventRepository.deleteEvent(event.getId())
+                                .addOnSuccessListener(unused -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(), R.string.event_deleted,
+                                            Toast.LENGTH_SHORT).show();
+                                    Navigation.findNavController(root)
+                                            .popBackStack(R.id.eventsFragment, false);
+                                })
+                                .addOnFailureListener(error -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(), R.string.event_delete_error,
+                                            Toast.LENGTH_SHORT).show();
+                                }))
+                .show();
     }
 
     private void showAddTeamDialog() {
