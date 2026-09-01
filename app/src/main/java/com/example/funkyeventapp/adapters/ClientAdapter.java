@@ -14,7 +14,9 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.Client;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientViewHolder> {
     public interface OnClientClickListener { void onClientClick(Client client); }
@@ -22,6 +24,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     public interface OnClientDeleteListener { void onClientDelete(Client client); }
 
     private final List<Client> clients = new ArrayList<>();
+    private final Map<String, Integer> eventCountsByClientId = new HashMap<>();
     private final OnClientClickListener listener;
     private final OnClientEditListener editListener;
     private final OnClientDeleteListener deleteListener;
@@ -39,6 +42,12 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         notifyDataSetChanged();
     }
 
+    public void submitEventCounts(Map<String, Integer> eventCounts) {
+        eventCountsByClientId.clear();
+        eventCountsByClientId.putAll(eventCounts);
+        notifyDataSetChanged();
+    }
+
     @NonNull @Override public ClientViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_client, parent, false);
         return new ClientViewHolder(view);
@@ -49,7 +58,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
 
     class ClientViewHolder extends RecyclerView.ViewHolder {
         private final ImageView logo;
-        private final TextView initial, name, contact, email, phone;
+        private final TextView initial, name, contact, email, phone, eventCount;
         private final ImageButton edit, delete;
 
         ClientViewHolder(@NonNull View itemView) {
@@ -60,6 +69,7 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             contact = itemView.findViewById(R.id.textContactPerson);
             email = itemView.findViewById(R.id.textClientEmail);
             phone = itemView.findViewById(R.id.textClientPhone);
+            eventCount = itemView.findViewById(R.id.textClientEventCount);
             edit = itemView.findViewById(R.id.buttonEditClient);
             delete = itemView.findViewById(R.id.buttonDeleteClient);
         }
@@ -69,6 +79,9 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             contact.setText(client.getContactPerson());
             email.setText(client.getEmail());
             phone.setText(client.getPhone());
+            int count = eventCountsByClientId.getOrDefault(client.getId(), 0);
+            eventCount.setText(itemView.getResources().getQuantityString(
+                    R.plurals.client_event_count, count, count));
             logo.setVisibility(View.GONE);
             initial.setVisibility(View.VISIBLE);
             String clientName = client.getName();

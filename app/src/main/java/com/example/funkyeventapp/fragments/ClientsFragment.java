@@ -20,7 +20,9 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.ClientAdapter;
 import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.models.Client;
+import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.repositories.ClientRepository;
+import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.repositories.MockDataRepository;
 import com.example.funkyeventapp.ui.AuthenticatedHeader;
 import com.google.android.gms.tasks.Task;
@@ -32,9 +34,12 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ClientsFragment extends Fragment {
     private final ClientRepository clientRepository = ClientRepository.getInstance();
+    private final EventRepository eventRepository = EventRepository.getInstance();
     private final MockDataRepository mockRepository = MockDataRepository.getInstance();
     private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private TextView invoicedLabel, invoicedValue, actualLabel, actualValue;
@@ -65,6 +70,7 @@ public class ClientsFragment extends Fragment {
 
         clientsTitle.setText(getString(R.string.clients_count, 0));
         loadClients(view, adapter, clientsTitle);
+        loadEventCounts(view);
         view.findViewById(R.id.buttonAddClient).setOnClickListener(v ->
                 showClientDialog(view, null));
         view.findViewById(R.id.buttonEvents).setOnClickListener(this::returnToEvents);
@@ -94,6 +100,26 @@ public class ClientsFragment extends Fragment {
             @Override public void onError(@NonNull Exception error) {
                 if (!isAdded() || getView() != root) return;
                 Toast.makeText(requireContext(), R.string.clients_load_error,
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadEventCounts(View root) {
+        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+            @Override public void onSuccess(List<Event> events) {
+                if (!isAdded() || getView() != root) return;
+                Map<String, Integer> counts = new HashMap<>();
+                for (Event event : events) {
+                    String clientId = event.getClientId();
+                    counts.put(clientId, counts.getOrDefault(clientId, 0) + 1);
+                }
+                adapter.submitEventCounts(counts);
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != root) return;
+                Toast.makeText(requireContext(), R.string.events_load_error,
                         Toast.LENGTH_SHORT).show();
             }
         });

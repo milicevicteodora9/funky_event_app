@@ -1,4 +1,8 @@
 <resources>
+    <plurals name="client_event_count">
+        <item quantity="one">%d event</item>
+        <item quantity="other">%d events</item>
+    </plurals>
     <string name="app_name">Funky Event App</string>
     <string name="user_name">Teodora Milićević</string>
     <string name="user_role">ADMIN</string>

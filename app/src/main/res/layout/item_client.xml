@@ -89,6 +89,14 @@
                 android:textColor="@color/funky_text_secondary"
                 android:textSize="11sp"
                 tools:text="+381 11 222 6000" />
+            <TextView
+                android:id="@+id/textClientEventCount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textColor="@color/funky_text_secondary"
+                android:textSize="11sp"
+                tools:text="3 events" />
         </LinearLayout>
 
         <ImageButton
