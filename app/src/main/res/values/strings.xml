@@ -20,6 +20,12 @@
     <string name="budget_item_update_error">Budget stavku nije moguće izmeniti.</string>
     <string name="budget_item_deleted">Budget stavka je obrisana</string>
     <string name="budget_item_delete_error">Budget stavku nije moguće obrisati.</string>
+    <string name="no_external_budget_items">Nema External stavki za kopiranje.</string>
+    <string name="budget_copy_error">Budget stavke nije moguće kopirati.</string>
+    <string name="no_internal_budget_items">Nema Internal stavki za kopiranje.</string>
+    <string name="copy_all_actual">Copy all to actual</string>
+    <string name="confirm_copy_internal_actual">Kopirati sve Internal stavke koje već nisu kopirane u Actual?</string>
+    <string name="copied_actual">Stavka je kopirana u Actual</string>
     <string name="no_budget_categories">Nema dostupnih budget kategorija.</string>
     <string name="category_name">Category name</string>
     <string name="category_name_required">Unesite naziv kategorije.</string>

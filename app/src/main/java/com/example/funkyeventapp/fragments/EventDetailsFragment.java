@@ -219,7 +219,7 @@ public class EventDetailsFragment extends Fragment {
         actualTab.setOnClickListener(v -> selectBudget(BudgetType.ACTUAL));
         view.findViewById(R.id.buttonAddBudgetItem).setOnClickListener(v ->
                 showBudgetItemDialog(view, null));
-        copyAllButton.setVisibility(View.GONE);
+        copyAllButton.setOnClickListener(v -> confirmCopyAll(view));
     }
 
     private void confirmDeleteEvent(@NonNull View root) {
@@ -319,7 +319,13 @@ public class EventDetailsFragment extends Fragment {
                 addBudgetItemCard(item);
             }
         }
-        copyAllButton.setVisibility(View.GONE);
+        boolean copySupported = selectedBudgetType == BudgetType.EXTERNAL
+                || selectedBudgetType == BudgetType.INTERNAL;
+        copyAllButton.setVisibility(copySupported ? View.VISIBLE : View.GONE);
+        if (copySupported) {
+            copyAllButton.setText(selectedBudgetType == BudgetType.EXTERNAL
+                    ? R.string.copy_all_internal : R.string.copy_all_actual);
+        }
     }
 
     private void renderTabs() {
@@ -392,6 +398,11 @@ public class EventDetailsFragment extends Fragment {
         textColumn.addView(description); textColumn.addView(formula); row.addView(textColumn);
         TextView amount = text(money(item.getTotal()), 13, R.color.funky_text, true);
         amount.setPadding(dp(6), 0, dp(4), 0); row.addView(amount);
+        if (item.getBudgetType() == BudgetType.EXTERNAL
+                || item.getBudgetType() == BudgetType.INTERNAL) {
+            row.addView(actionButton(R.drawable.ic_copy,
+                    v -> copySingleBudgetItem(requireView(), item)));
+        }
         row.addView(actionButton(R.drawable.ic_edit, v -> showBudgetItemDialog(requireView(), item)));
         row.addView(actionButton(R.drawable.ic_delete,
                 v -> confirmDeleteBudgetItem(requireView(), item)));
@@ -429,6 +440,82 @@ public class EventDetailsFragment extends Fragment {
                                             Toast.LENGTH_SHORT).show();
                                 }))
                 .show();
+    }
+
+    private void confirmCopyAll(@NonNull View root) {
+        BudgetType sourceType = selectedBudgetType;
+        BudgetType targetType = sourceType == BudgetType.EXTERNAL
+                ? BudgetType.INTERNAL : BudgetType.ACTUAL;
+        boolean hasSourceItems = false;
+        for (BudgetItem item : budgetItems) {
+            if (item.getBudgetType() == sourceType) {
+                hasSourceItems = true;
+                break;
+            }
+        }
+        if (!hasSourceItems) {
+            Toast.makeText(requireContext(), sourceType == BudgetType.EXTERNAL
+                            ? R.string.no_external_budget_items
+                            : R.string.no_internal_budget_items,
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(sourceType == BudgetType.EXTERNAL
+                        ? R.string.confirm_copy_all : R.string.confirm_copy_internal_actual)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.add, (dialog, which) -> {
+                    com.google.android.gms.tasks.Task<Integer> copyTask = sourceType
+                            == BudgetType.EXTERNAL
+                            ? budgetRepository.copyExternalItemsToInternal(event.getId())
+                            : budgetRepository.copyInternalItemsToActual(event.getId());
+                    copyTask
+                                .addOnSuccessListener(copiedCount -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(), copiedCount == 0
+                                                    ? getString(R.string.nothing_to_copy)
+                                                    : getString(R.string.items_copied, copiedCount),
+                                            Toast.LENGTH_SHORT).show();
+                                    if (copiedCount > 0 && targetType == BudgetType.ACTUAL) {
+                                        selectedBudgetType = BudgetType.ACTUAL;
+                                    }
+                                    loadBudget(root);
+                                })
+                                .addOnFailureListener(error -> {
+                                    if (!isAdded() || getView() != root) return;
+                                    Toast.makeText(requireContext(), R.string.budget_copy_error,
+                                            Toast.LENGTH_SHORT).show();
+                                });
+                })
+                .show();
+    }
+
+    private void copySingleBudgetItem(@NonNull View root, @NonNull BudgetItem item) {
+        BudgetType targetType = item.getBudgetType() == BudgetType.EXTERNAL
+                ? BudgetType.INTERNAL : BudgetType.ACTUAL;
+        budgetRepository.copyBudgetItem(event.getId(), item.getId(),
+                        item.getBudgetType(), targetType)
+                .addOnSuccessListener(copiedCount -> {
+                    if (!isAdded() || getView() != root) return;
+                    if (copiedCount == 0) {
+                        Toast.makeText(requireContext(), R.string.already_copied,
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    Toast.makeText(requireContext(), targetType == BudgetType.INTERNAL
+                                    ? R.string.copied_internal : R.string.copied_actual,
+                            Toast.LENGTH_SHORT).show();
+                    if (targetType == BudgetType.ACTUAL) {
+                        selectedBudgetType = BudgetType.ACTUAL;
+                    }
+                    loadBudget(root);
+                })
+                .addOnFailureListener(error -> {
+                    if (!isAdded() || getView() != root) return;
+                    Toast.makeText(requireContext(), R.string.budget_copy_error,
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void showBudgetItemDialog(@NonNull View root, @Nullable BudgetItem existing) {

@@ -1,6 +1,7 @@
 package com.example.funkyeventapp.repositories;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.example.funkyeventapp.models.Budget;
 import com.example.funkyeventapp.models.BudgetCategory;
@@ -11,15 +12,19 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /** Read access for an event budget and its items/categories. */
 public final class BudgetRepository {
@@ -109,6 +114,65 @@ public final class BudgetRepository {
     public Task<Void> deleteBudgetItem(@NonNull String eventId, @NonNull String itemId) {
         return firestore.collection("budgets").document(eventId)
                 .collection("items").document(itemId).delete();
+    }
+
+    public Task<Integer> copyExternalItemsToInternal(@NonNull String eventId) {
+        return copyItems(eventId, BudgetType.EXTERNAL, BudgetType.INTERNAL, null);
+    }
+
+    public Task<Integer> copyInternalItemsToActual(@NonNull String eventId) {
+        return copyItems(eventId, BudgetType.INTERNAL, BudgetType.ACTUAL, null);
+    }
+
+    public Task<Integer> copyBudgetItem(@NonNull String eventId, @NonNull String itemId,
+                                        @NonNull BudgetType sourceType,
+                                        @NonNull BudgetType targetType) {
+        return copyItems(eventId, sourceType, targetType, itemId);
+    }
+
+    private Task<Integer> copyItems(@NonNull String eventId, @NonNull BudgetType sourceType,
+                                    @NonNull BudgetType targetType,
+                                    @Nullable String onlySourceItemId) {
+        CollectionReference itemsCollection = firestore.collection("budgets")
+                .document(eventId).collection("items");
+        return itemsCollection.get().continueWithTask(readTask -> {
+            QuerySnapshot snapshot = readTask.getResult();
+            List<BudgetItem> sourceItems = new ArrayList<>();
+            Set<String> copiedSourceIds = new HashSet<>();
+            for (DocumentSnapshot document : snapshot.getDocuments()) {
+                BudgetItem item = mapItem(document, eventId);
+                if (item.getBudgetType() == sourceType
+                        && (onlySourceItemId == null || onlySourceItemId.equals(item.getId()))) {
+                    sourceItems.add(item);
+                } else if (item.getBudgetType() == targetType
+                        && item.getSourceBudgetItemId() != null) {
+                    copiedSourceIds.add(item.getSourceBudgetItemId());
+                }
+            }
+
+            WriteBatch batch = firestore.batch();
+            int copyCount = 0;
+            for (BudgetItem source : sourceItems) {
+                if (copiedSourceIds.contains(source.getId())) continue;
+                BudgetItem copy = new BudgetItem(null, eventId, targetType,
+                        source.getCategoryId(), source.getDescription(), source.getQuantity(),
+                        source.getDays(), source.getDailyRate(), source.getNotes(),
+                        BudgetItemSource.MANUAL, null, source.getId());
+                Map<String, Object> data = itemData(copy);
+                data.put("sourceBudgetItemId", source.getId());
+                batch.set(itemsCollection.document(targetType.name().toLowerCase(Locale.ROOT)
+                        + "_" + source.getId()), data);
+                copyCount++;
+            }
+            if (copyCount == 0) return Tasks.forResult(0);
+            int finalCopyCount = copyCount;
+            return batch.commit().continueWith(commitTask -> {
+                if (!commitTask.isSuccessful()) {
+                    throw commitTask.getException();
+                }
+                return finalCopyCount;
+            });
+        });
     }
 
     public void getBudgetForEvent(@NonNull String eventId,
