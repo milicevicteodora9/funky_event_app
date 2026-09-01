@@ -13,6 +13,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -123,7 +125,8 @@ public class CashboxFragment extends Fragment {
         list.setLayoutManager(new LinearLayoutManager(requireContext()));
         list.setAdapter(adapter);
         view.findViewById(R.id.buttonCashboxBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
-        view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> showReadOnlyMessage());
+        view.findViewById(R.id.buttonCashboxAdd).setOnClickListener(v -> showReceivedAmountDialog());
+        view.findViewById(R.id.textCashboxReceived).setOnClickListener(v -> showReceivedAmountDialog());
         view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> showReadOnlyMessage());
         view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> showReadOnlyMessage());
         view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> showReadOnlyMessage());
@@ -198,9 +201,7 @@ public class CashboxFragment extends Fragment {
                 BigDecimal received = cashbox.getReceivedAmount();
                 BigDecimal spent = BigDecimal.ZERO;
                 for (CashboxTransaction transaction : transactions) {
-                    if (transaction.getTransactionType() == TransactionType.INCOME) {
-                        received = received.add(transaction.getAmountInEur());
-                    } else {
+                    if (transaction.getTransactionType() == TransactionType.EXPENSE) {
                         spent = spent.add(transaction.getAmountInEur());
                     }
                 }
@@ -228,6 +229,54 @@ public class CashboxFragment extends Fragment {
                 Toast.makeText(requireContext(), R.string.cashbox_load_failed, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void showReceivedAmountDialog() {
+        if (cashbox == null) return;
+        EditText amountInput = new EditText(requireContext());
+        amountInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER
+                | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        amountInput.setHint(R.string.received_amount_hint);
+        amountInput.setText(cashbox.getReceivedAmount().stripTrailingZeros().toPlainString());
+        amountInput.setSelectAllOnFocus(true);
+        int horizontalPadding = (int) (24 * getResources().getDisplayMetrics().density);
+        FrameLayout container = new FrameLayout(requireContext());
+        container.setPadding(horizontalPadding, 0, horizontalPadding, 0);
+        container.addView(amountInput, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.received_amount_title)
+                .setView(container)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, null)
+                .create();
+        dialog.setOnShowListener(unused -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
+                    try {
+                        String value = amountInput.getText() == null ? "" : amountInput.getText().toString().trim();
+                        BigDecimal receivedAmount = new BigDecimal(value.replace(',', '.'));
+                        if (receivedAmount.signum() < 0) throw new NumberFormatException();
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                        cashboxRepository.saveReceivedAmount(receivedAmount, new CashboxRepository.Callback<Void>() {
+                            @Override public void onSuccess(Void ignored) {
+                                if (!isAdded() || getView() != root) return;
+                                dialog.dismiss();
+                                Toast.makeText(requireContext(), R.string.received_amount_saved, Toast.LENGTH_SHORT).show();
+                                refreshCashbox();
+                            }
+
+                            @Override public void onError(@NonNull Exception error) {
+                                if (!isAdded() || getView() != root) return;
+                                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                                Toast.makeText(requireContext(), R.string.received_amount_save_failed, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } catch (NumberFormatException error) {
+                        amountInput.setError(getString(R.string.invalid_received_amount));
+                    }
+                }));
+        dialog.show();
     }
 
     private void showReadOnlyMessage() {

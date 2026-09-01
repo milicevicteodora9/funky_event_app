@@ -11,6 +11,7 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.math.BigDecimal;
@@ -22,8 +23,10 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /** Read access to the authenticated user's Firestore cashbox. */
 public final class CashboxRepository {
@@ -74,6 +77,36 @@ public final class CashboxRepository {
                         callback.onError(error);
                     }
                 })
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void saveReceivedAmount(@NonNull BigDecimal receivedAmount, @NonNull Callback<Void> callback) {
+        if (receivedAmount.signum() < 0) {
+            callback.onError(new IllegalArgumentException("Received amount cannot be negative"));
+            return;
+        }
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError(new IllegalStateException("Authenticated user is required"));
+            return;
+        }
+
+        String userId = user.getUid();
+        com.google.firebase.firestore.DocumentReference document =
+                firestore.collection("cashboxes").document(userId);
+        firestore.runTransaction(transaction -> {
+            DocumentSnapshot snapshot = transaction.get(document);
+            if (snapshot.exists()) {
+                transaction.update(document, "receivedAmount", receivedAmount.doubleValue());
+            } else {
+                Map<String, Object> data = new HashMap<>();
+                data.put("userId", userId);
+                data.put("receivedAmount", receivedAmount.doubleValue());
+                data.put("createdAt", FieldValue.serverTimestamp());
+                transaction.set(document, data);
+            }
+            return null;
+        }).addOnSuccessListener(unused -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onError);
     }
 

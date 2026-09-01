@@ -187,6 +187,11 @@
     <string name="cashbox_load_failed">Cashbox nije moguće učitati</string>
     <string name="cashbox_changes_not_available">Izmene cashbox-a još nisu povezane sa Firestore-om</string>
     <string name="cashbox_event_reference">Event · %1$s</string>
+    <string name="received_amount_title">Primljeni novac</string>
+    <string name="received_amount_hint">Ukupan iznos u EUR</string>
+    <string name="received_amount_saved">Primljeni iznos je sačuvan</string>
+    <string name="received_amount_save_failed">Primljeni iznos nije moguće sačuvati</string>
+    <string name="invalid_received_amount">Unesite ispravan iznos</string>
     <string name="received_value">RECEIVED\n%1$s EUR</string>
     <string name="spent_value">SPENT\n%1$s EUR</string>
     <string name="balance_value">BALANCE\n%1$s EUR</string>
