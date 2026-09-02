@@ -151,6 +151,218 @@ public final class BudgetRepository {
         });
     }
 
+    Task<Void> updateCashboxExpenseWithActual(@NonNull String userId,
+                                               @Nullable String previousEventId,
+                                               @NonNull CashboxTransaction expense,
+                                               @NonNull Map<String, Object> cashboxTransactionData) {
+        if (expense.getId() == null || expense.getAmountInEur() == null) {
+            throw new IllegalArgumentException("Cashbox transaction ID and amount are required");
+        }
+
+        String transactionId = expense.getId();
+        String nextEventId = emptyToNull(expense.getEventId());
+        String oldEventId = emptyToNull(previousEventId);
+        DocumentReference cashboxDocument = firestore.collection("cashboxes").document(userId);
+        DocumentReference cashboxTransactionDocument = cashboxDocument
+                .collection("transactions").document(transactionId);
+        DocumentReference nextBudgetDocument = nextEventId == null ? null
+                : firestore.collection("budgets").document(nextEventId);
+        DocumentReference nextActualDocument = cashboxActualDocument(nextEventId, transactionId);
+        Map<String, Object> nextActualData = nextEventId == null ? null
+                : cashboxActualData(expense, nextEventId);
+        Task<List<DocumentReference>> oldMatchesTask =
+                findCashboxActualDocuments(oldEventId, transactionId);
+        Task<List<DocumentReference>> nextMatchesTask = oldEventId != null
+                && oldEventId.equals(nextEventId) ? oldMatchesTask
+                : findCashboxActualDocuments(nextEventId, transactionId);
+
+        return Tasks.whenAllSuccess(oldMatchesTask, nextMatchesTask)
+                .continueWithTask(result -> {
+                    @SuppressWarnings("unchecked")
+                    List<DocumentReference> oldActualDocuments = withCanonical(
+                            (List<DocumentReference>) result.getResult().get(0),
+                            cashboxActualDocument(oldEventId, transactionId));
+                    @SuppressWarnings("unchecked")
+                    List<DocumentReference> nextActualDocuments = withCanonical(
+                            (List<DocumentReference>) result.getResult().get(1), nextActualDocument);
+                    Map<String, DocumentReference> candidates = new HashMap<>();
+                    for (DocumentReference document : oldActualDocuments) {
+                        candidates.put(document.getPath(), document);
+                    }
+                    for (DocumentReference document : nextActualDocuments) {
+                        candidates.put(document.getPath(), document);
+                    }
+                    boolean eventChanged = oldEventId == null
+                            ? nextEventId != null : !oldEventId.equals(nextEventId);
+
+                    return firestore.runTransaction(transaction -> {
+                        DocumentSnapshot cashboxSnapshot = transaction.get(cashboxDocument);
+                        DocumentSnapshot expenseSnapshot = transaction.get(cashboxTransactionDocument);
+                        DocumentSnapshot nextBudgetSnapshot = nextBudgetDocument == null ? null
+                                : transaction.get(nextBudgetDocument);
+                        Map<String, DocumentSnapshot> actualSnapshots = new HashMap<>();
+                        for (DocumentReference document : candidates.values()) {
+                            actualSnapshots.put(document.getPath(), transaction.get(document));
+                        }
+
+                        validateCashboxOwner(cashboxSnapshot, userId);
+                        if (!expenseSnapshot.exists()) {
+                            throw new IllegalStateException("Cashbox expense does not exist");
+                        }
+                        for (DocumentSnapshot actualSnapshot : actualSnapshots.values()) {
+                            validateCashboxActual(actualSnapshot, transactionId);
+                        }
+
+                        transaction.set(cashboxTransactionDocument, cashboxTransactionData);
+                        if (eventChanged) {
+                            for (DocumentReference document : oldActualDocuments) {
+                                if (actualSnapshots.get(document.getPath()).exists()) {
+                                    transaction.delete(document);
+                                }
+                            }
+                        }
+                        if (nextActualDocument != null) {
+                            if (!nextBudgetSnapshot.exists()) {
+                                Map<String, Object> budgetData = new HashMap<>();
+                                budgetData.put("eventId", nextEventId);
+                                budgetData.put("includeVat", false);
+                                budgetData.put("discountPercentage", 0.0);
+                                transaction.set(nextBudgetDocument, budgetData);
+                            }
+                            for (DocumentReference document : nextActualDocuments) {
+                                if (!document.getPath().equals(nextActualDocument.getPath())
+                                        && actualSnapshots.get(document.getPath()).exists()) {
+                                    transaction.delete(document);
+                                }
+                            }
+                            transaction.set(nextActualDocument, nextActualData);
+                        }
+                        return null;
+                    });
+                });
+    }
+
+    Task<Void> deleteCashboxExpenseWithActual(@NonNull String userId,
+                                               @NonNull CashboxTransaction expense) {
+        if (expense.getId() == null || expense.getId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Cashbox transaction ID is required");
+        }
+        String transactionId = expense.getId();
+        String eventId = emptyToNull(expense.getEventId());
+        DocumentReference cashboxDocument = firestore.collection("cashboxes").document(userId);
+        DocumentReference cashboxTransactionDocument = cashboxDocument
+                .collection("transactions").document(transactionId);
+
+        return findCashboxActualDocuments(eventId, transactionId).continueWithTask(result -> {
+            List<DocumentReference> actualDocuments = withCanonical(result.getResult(),
+                    cashboxActualDocument(eventId, transactionId));
+            return firestore.runTransaction(transaction -> {
+                DocumentSnapshot cashboxSnapshot = transaction.get(cashboxDocument);
+                DocumentSnapshot expenseSnapshot = transaction.get(cashboxTransactionDocument);
+                List<DocumentSnapshot> actualSnapshots = new ArrayList<>();
+                for (DocumentReference document : actualDocuments) {
+                    actualSnapshots.add(transaction.get(document));
+                }
+                validateCashboxOwner(cashboxSnapshot, userId);
+                if (!expenseSnapshot.exists()) {
+                    throw new IllegalStateException("Cashbox expense does not exist");
+                }
+                for (DocumentSnapshot actualSnapshot : actualSnapshots) {
+                    validateCashboxActual(actualSnapshot, transactionId);
+                }
+                transaction.delete(cashboxTransactionDocument);
+                for (int index = 0; index < actualDocuments.size(); index++) {
+                    if (actualSnapshots.get(index).exists()) {
+                        transaction.delete(actualDocuments.get(index));
+                    }
+                }
+                return null;
+            });
+        });
+    }
+
+    public void getAllBudgetCategories(@NonNull Callback<List<BudgetCategory>> callback) {
+        firestore.collection("budgetCategories").get()
+                .addOnSuccessListener(snapshot -> {
+                    try {
+                        List<BudgetCategory> categories = new ArrayList<>();
+                        for (DocumentSnapshot document : snapshot.getDocuments()) {
+                            categories.add(mapCategory(document));
+                        }
+                        callback.onSuccess(categories);
+                    } catch (IllegalArgumentException | IllegalStateException error) {
+                        callback.onError(error);
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
+    private Task<List<DocumentReference>> findCashboxActualDocuments(
+            @Nullable String eventId, @NonNull String transactionId) {
+        if (eventId == null) return Tasks.forResult(new ArrayList<>());
+        return firestore.collection("budgets").document(eventId).collection("items")
+                .whereEqualTo("sourceTransactionId", transactionId).get()
+                .continueWith(result -> {
+                    List<DocumentReference> matches = new ArrayList<>();
+                    for (DocumentSnapshot document : result.getResult().getDocuments()) {
+                        if (BudgetItemSource.CASHBOX.name().equals(document.getString("sourceType"))) {
+                            matches.add(document.getReference());
+                        }
+                    }
+                    return matches;
+                });
+    }
+
+    private List<DocumentReference> withCanonical(List<DocumentReference> matches,
+                                                   @Nullable DocumentReference canonical) {
+        List<DocumentReference> result = new ArrayList<>(matches);
+        if (canonical == null) return result;
+        for (DocumentReference document : result) {
+            if (document.getPath().equals(canonical.getPath())) return result;
+        }
+        result.add(canonical);
+        return result;
+    }
+
+    private DocumentReference cashboxActualDocument(@Nullable String eventId,
+                                                     @NonNull String transactionId) {
+        if (eventId == null) return null;
+        return firestore.collection("budgets").document(eventId).collection("items")
+                .document("cashbox_" + transactionId);
+    }
+
+    private Map<String, Object> cashboxActualData(@NonNull CashboxTransaction expense,
+                                                   @NonNull String eventId) {
+        String transactionId = expense.getId();
+        BudgetItem actualItem = new BudgetItem("cashbox_" + transactionId, eventId,
+                BudgetType.ACTUAL, expense.getCategoryId(), expense.getDescription(),
+                BigDecimal.ONE, BigDecimal.ONE, expense.getAmountInEur(), "",
+                BudgetItemSource.CASHBOX, transactionId, null);
+        Map<String, Object> data = itemData(actualItem);
+        data.put("sourceTransactionId", transactionId);
+        data.put("sourceBudgetItemId", null);
+        return data;
+    }
+
+    private void validateCashboxOwner(DocumentSnapshot cashboxSnapshot, String userId) {
+        if (!cashboxSnapshot.exists() || !userId.equals(cashboxSnapshot.getString("userId"))) {
+            throw new IllegalStateException("Cashbox must belong to the authenticated user");
+        }
+    }
+
+    private void validateCashboxActual(@Nullable DocumentSnapshot actualSnapshot,
+                                       @NonNull String transactionId) {
+        if (actualSnapshot == null || !actualSnapshot.exists()) return;
+        if (!BudgetItemSource.CASHBOX.name().equals(actualSnapshot.getString("sourceType"))
+                || !transactionId.equals(actualSnapshot.getString("sourceTransactionId"))) {
+            throw new IllegalStateException("Budget item ID collision");
+        }
+    }
+
+    private String emptyToNull(@Nullable String value) {
+        return value == null || value.trim().isEmpty() ? null : value;
+    }
+
     public Task<Void> updateBudgetItem(@NonNull String eventId, @NonNull BudgetItem item) {
         if (item.getId() == null || item.getId().trim().isEmpty()) {
             throw new IllegalArgumentException("Budget item ID is required");

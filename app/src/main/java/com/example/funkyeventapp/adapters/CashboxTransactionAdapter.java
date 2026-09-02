@@ -18,7 +18,7 @@ public class CashboxTransactionAdapter extends RecyclerView.Adapter<CashboxTrans
     @NonNull @Override public Holder onCreateViewHolder(@NonNull ViewGroup p,int t){return new Holder(LayoutInflater.from(p.getContext()).inflate(R.layout.item_cashbox_transaction,p,false));}
     @Override public void onBindViewHolder(@NonNull Holder h,int p){h.bind(items.get(p));} @Override public int getItemCount(){return items.size();}
     class Holder extends RecyclerView.ViewHolder {
-        TextView amount,name,dateText,purpose; View receiptButton; Holder(View v){super(v);amount=v.findViewById(R.id.textTransactionAmount);name=v.findViewById(R.id.textTransactionName);dateText=v.findViewById(R.id.textTransactionDate);purpose=v.findViewById(R.id.textTransactionPurpose);receiptButton=v.findViewById(R.id.buttonTransactionReceipt);receiptButton.setOnClickListener(x->listener.onReceipt(items.get(getBindingAdapterPosition())));v.findViewById(R.id.buttonEditTransaction).setOnClickListener(x->listener.onEdit(items.get(getBindingAdapterPosition())));v.findViewById(R.id.buttonDeleteTransaction).setOnClickListener(x->listener.onDelete(items.get(getBindingAdapterPosition())));}
+        TextView amount,name,dateText,purpose; View receiptButton,editButton,deleteButton; Holder(View v){super(v);amount=v.findViewById(R.id.textTransactionAmount);name=v.findViewById(R.id.textTransactionName);dateText=v.findViewById(R.id.textTransactionDate);purpose=v.findViewById(R.id.textTransactionPurpose);receiptButton=v.findViewById(R.id.buttonTransactionReceipt);editButton=v.findViewById(R.id.buttonEditTransaction);deleteButton=v.findViewById(R.id.buttonDeleteTransaction);receiptButton.setOnClickListener(x->listener.onReceipt(items.get(getBindingAdapterPosition())));editButton.setOnClickListener(x->listener.onEdit(items.get(getBindingAdapterPosition())));deleteButton.setOnClickListener(x->listener.onDelete(items.get(getBindingAdapterPosition())));}
         void bind(CashboxTransaction tx){
             boolean income=tx.getTransactionType()==TransactionType.INCOME;
             String sign=income?"+":"-";
@@ -31,6 +31,8 @@ public class CashboxTransactionAdapter extends RecyclerView.Adapter<CashboxTrans
                     :eventNames.containsKey(tx.getEventId())?eventNames.get(tx.getEventId()):itemView.getContext().getString(R.string.unknown_event);
             purpose.setText(purposeLabel);
             receiptButton.setVisibility(tx.getReceiptId() == null ? View.GONE : View.VISIBLE);
+            editButton.setVisibility(income ? View.GONE : View.VISIBLE);
+            deleteButton.setVisibility(income ? View.GONE : View.VISIBLE);
         }
     }
 }

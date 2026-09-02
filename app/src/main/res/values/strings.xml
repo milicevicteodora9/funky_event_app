@@ -195,6 +195,11 @@
     <string name="add_cashbox_expense">Add cashbox expense</string>
     <string name="cashbox_expense_saved">Rashod je uspešno dodat</string>
     <string name="cashbox_expense_save_failed">Rashod nije moguće sačuvati</string>
+    <string name="cashbox_expense_delete_failed">Rashod nije moguće obrisati</string>
+    <string name="cashbox_entry_deleted">Cashbox expense je obrisan</string>
+    <string name="cashbox_saving">Čuvanje…</string>
+    <string name="cashbox_deleting">Brisanje…</string>
+    <string name="receipt_delete_failed">Transakcija je obrisana, ali receipt fajl nije moguće obrisati iz Storage-a.</string>
     <string name="cashbox_rules_blocked">Firestore rules blokiraju čuvanje Cashbox podatka</string>
     <string name="received_total_entry">Received amount</string>
     <string name="received_entries">Received entries (%1$d)</string>

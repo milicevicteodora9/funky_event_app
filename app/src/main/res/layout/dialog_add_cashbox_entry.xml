@@ -4,7 +4,7 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="18dp" android:paddingBottom="14dp">
         <TextView android:id="@+id/textCashboxEntryDialogTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
             android:paddingTop="8dp" android:paddingBottom="14dp" android:text="@string/add_cashbox_entry" android:textColor="@color/funky_text" android:textSize="21sp" android:textStyle="bold" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="76dp" android:orientation="horizontal">
+        <LinearLayout android:id="@+id/layoutEntryType" android:layout_width="match_parent" android:layout_height="76dp" android:orientation="horizontal">
             <com.google.android.material.button.MaterialButton android:id="@+id/buttonEntryReceived" style="@style/CashboxTypeButton"
                 android:layout_weight="1" android:backgroundTint="@color/funky_completed" app:strokeColor="@color/funky_mint" app:strokeWidth="1dp" android:text="↗\nReceived" />
             <com.google.android.material.button.MaterialButton android:id="@+id/buttonEntrySpent" style="@style/CashboxTypeButton"
@@ -34,6 +34,9 @@
         </com.google.android.material.textfield.TextInputLayout>
         <com.google.android.material.textfield.TextInputLayout style="@style/CashboxInput" android:layout_height="62dp" android:layout_marginTop="10dp" android:hint="@string/link_to_event" app:endIconMode="dropdown_menu">
             <AutoCompleteTextView android:id="@+id/inputEntryEvent" android:layout_width="match_parent" android:layout_height="match_parent" android:clickable="true" android:cursorVisible="false" android:focusable="false" android:inputType="none" android:textSize="15sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout android:id="@+id/layoutEntryCategory" style="@style/CashboxInput" android:layout_height="62dp" android:layout_marginTop="10dp" android:hint="@string/category" android:visibility="gone" app:endIconMode="dropdown_menu">
+            <AutoCompleteTextView android:id="@+id/inputEntryCategory" android:layout_width="match_parent" android:layout_height="match_parent" android:clickable="true" android:cursorVisible="false" android:focusable="false" android:inputType="none" android:textSize="15sp" />
         </com.google.android.material.textfield.TextInputLayout>
         <com.google.android.material.button.MaterialButton android:id="@+id/buttonSaveCashboxEntry" android:layout_width="match_parent" android:layout_height="48dp"
             android:layout_marginTop="14dp" android:backgroundTint="@color/funky_mint" android:text="@string/save" android:textAllCaps="false" android:textColor="@color/white" android:textSize="15sp" android:textStyle="bold" app:cornerRadius="14dp" />

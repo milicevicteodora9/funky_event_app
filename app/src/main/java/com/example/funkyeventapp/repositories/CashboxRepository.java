@@ -1,6 +1,7 @@
 package com.example.funkyeventapp.repositories;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.example.funkyeventapp.models.Cashbox;
 import com.example.funkyeventapp.models.CashboxTransaction;
@@ -164,6 +165,54 @@ public final class CashboxRepository {
             expense.setId(null);
             callback.onError(error);
         });
+    }
+
+    public void updateExpense(@Nullable String previousEventId,
+                              @NonNull CashboxTransaction expense,
+                              @NonNull Callback<Void> callback) {
+        if (expense.getId() == null || expense.getId().trim().isEmpty()
+                || expense.getTransactionType() != TransactionType.EXPENSE
+                || expense.getAmount() == null || expense.getAmount().signum() <= 0
+                || expense.getDescription() == null || expense.getDescription().trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("Valid existing expense data is required"));
+            return;
+        }
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError(new IllegalStateException("Authenticated user is required"));
+            return;
+        }
+        String userId = user.getUid();
+        expense.setCashboxId(userId);
+        try {
+            budgetRepository.updateCashboxExpenseWithActual(userId, previousEventId, expense,
+                            expenseData(expense))
+                    .addOnSuccessListener(unused -> callback.onSuccess(null))
+                    .addOnFailureListener(callback::onError);
+        } catch (Exception error) {
+            callback.onError(error);
+        }
+    }
+
+    public void deleteExpense(@NonNull CashboxTransaction expense,
+                              @NonNull Callback<Void> callback) {
+        if (expense.getId() == null || expense.getId().trim().isEmpty()
+                || expense.getTransactionType() != TransactionType.EXPENSE) {
+            callback.onError(new IllegalArgumentException("Valid existing expense is required"));
+            return;
+        }
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError(new IllegalStateException("Authenticated user is required"));
+            return;
+        }
+        try {
+            budgetRepository.deleteCashboxExpenseWithActual(user.getUid(), expense)
+                    .addOnSuccessListener(unused -> callback.onSuccess(null))
+                    .addOnFailureListener(callback::onError);
+        } catch (Exception error) {
+            callback.onError(error);
+        }
     }
 
     private Map<String, Object> expenseData(CashboxTransaction expense) {

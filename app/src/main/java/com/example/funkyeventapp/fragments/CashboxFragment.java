@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -31,19 +32,23 @@ import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.CashboxTransactionAdapter;
 import com.example.funkyeventapp.models.Cashbox;
 import com.example.funkyeventapp.models.CashboxTransaction;
+import com.example.funkyeventapp.models.BudgetCategory;
 import com.example.funkyeventapp.models.Currency;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.ExpensePurpose;
 import com.example.funkyeventapp.models.DocumentSource;
 import com.example.funkyeventapp.models.TransactionType;
 import com.example.funkyeventapp.repositories.CashboxRepository;
+import com.example.funkyeventapp.repositories.BudgetRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.services.AuthService;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.storage.FirebaseStorage;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -58,8 +63,10 @@ import java.io.File;
 import java.io.IOException;
 
 public class CashboxFragment extends Fragment {
+    private static final String TAG = "CashboxFragment";
     private final CashboxRepository cashboxRepository = CashboxRepository.getInstance();
     private final EventRepository eventRepository = EventRepository.getInstance();
+    private final BudgetRepository budgetRepository = BudgetRepository.getInstance();
     private final DecimalFormat money = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private final DateTimeFormatter inputDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private Cashbox cashbox;
@@ -120,8 +127,8 @@ public class CashboxFragment extends Fragment {
                 current.getFullName(), Currency.EUR.name()));
         adapter = new CashboxTransactionAdapter(new CashboxTransactionAdapter.Listener() {
             @Override public void onReceipt(CashboxTransaction item) { openReceipt(item); }
-            @Override public void onEdit(CashboxTransaction item) { showReadOnlyMessage(); }
-            @Override public void onDelete(CashboxTransaction item) { showReadOnlyMessage(); }
+            @Override public void onEdit(CashboxTransaction item) { loadEditData(item); }
+            @Override public void onDelete(CashboxTransaction item) { confirmDelete(item); }
         });
         RecyclerView list = view.findViewById(R.id.recyclerCashbox);
         list.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -348,7 +355,7 @@ public class CashboxFragment extends Fragment {
         eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
             @Override public void onSuccess(List<Event> events) {
                 if (!isAdded() || getView() != root) return;
-                showExpenseDialog(events);
+                showExpenseDialog(events, null, new ArrayList<>());
             }
 
             @Override public void onError(@NonNull Exception error) {
@@ -358,9 +365,40 @@ public class CashboxFragment extends Fragment {
         });
     }
 
-    private void showExpenseDialog(List<Event> assignedEvents) {
+    private void loadEditData(@NonNull CashboxTransaction expense) {
+        if (expense.getTransactionType() != TransactionType.EXPENSE) return;
+        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+            @Override public void onSuccess(List<Event> events) {
+                if (!isAdded() || getView() != root) return;
+                budgetRepository.getAllBudgetCategories(new BudgetRepository.Callback<List<BudgetCategory>>() {
+                    @Override public void onSuccess(List<BudgetCategory> categories) {
+                        if (!isAdded() || getView() != root) return;
+                        showExpenseDialog(events, expense, categories);
+                    }
+
+                    @Override public void onError(@NonNull Exception error) {
+                        if (!isAdded() || getView() != root) return;
+                        Toast.makeText(requireContext(), R.string.budget_load_error, Toast.LENGTH_SHORT).show();
+                        showExpenseDialog(events, expense, new ArrayList<>());
+                    }
+                });
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != root) return;
+                Toast.makeText(requireContext(), R.string.events_load_error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showExpenseDialog(List<Event> assignedEvents,
+                                   @Nullable CashboxTransaction editingExpense,
+                                   List<BudgetCategory> categories) {
+        boolean editing = editingExpense != null;
         View form = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_cashbox_entry, null, false);
-        ((TextView) form.findViewById(R.id.textCashboxEntryDialogTitle)).setText(R.string.add_cashbox_entry);
+        ((TextView) form.findViewById(R.id.textCashboxEntryDialogTitle)).setText(
+                editing ? R.string.edit_cashbox_entry : R.string.add_cashbox_entry);
+        form.findViewById(R.id.layoutEntryType).setVisibility(editing ? View.GONE : View.VISIBLE);
         MaterialButton received = form.findViewById(R.id.buttonEntryReceived);
         MaterialButton spent = form.findViewById(R.id.buttonEntrySpent);
         TextInputEditText amount = form.findViewById(R.id.inputEntryAmount);
@@ -370,22 +408,77 @@ public class CashboxFragment extends Fragment {
         TextInputEditText description = form.findViewById(R.id.inputEntryDescription);
         AutoCompleteTextView currency = form.findViewById(R.id.inputEntryCurrency);
         AutoCompleteTextView eventInput = form.findViewById(R.id.inputEntryEvent);
+        AutoCompleteTextView categoryInput = form.findViewById(R.id.inputEntryCategory);
+        TextInputLayout categoryLayout = form.findViewById(R.id.layoutEntryCategory);
+        categoryLayout.setVisibility(editing ? View.VISIBLE : View.GONE);
         TransactionType[] selectedType = {TransactionType.EXPENSE};
-        LocalDate[] selectedDate = {LocalDate.now()};
+        LocalDate[] selectedDate = {editing ? editingExpense.getDate() : LocalDate.now()};
         Currency[] currencies = Currency.values();
         currency.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, currencies));
         currency.setOnClickListener(v -> currency.showDropDown());
-        Currency initialCurrency = Currency.RSD;
+        Currency initialCurrency = editing ? editingExpense.getCurrency() : Currency.RSD;
         currency.setText(initialCurrency.name(), false);
         List<String> eventLabels = new ArrayList<>();
+        List<String> eventIds = new ArrayList<>();
         eventLabels.add(getString(R.string.general_expenses));
-        for (Event event : assignedEvents) eventLabels.add(event.getName());
+        eventIds.add(null);
+        for (Event event : assignedEvents) {
+            eventLabels.add(event.getName());
+            eventIds.add(event.getId());
+        }
+        int initialEventPosition = 0;
+        if (editing && editingExpense.getEventId() != null) {
+            for (int index = 1; index < eventIds.size(); index++) {
+                if (editingExpense.getEventId().equals(eventIds.get(index))) {
+                    initialEventPosition = index;
+                    break;
+                }
+            }
+            if (initialEventPosition == 0) {
+                eventLabels.add(editingExpense.getEventId());
+                eventIds.add(editingExpense.getEventId());
+                initialEventPosition = eventIds.size() - 1;
+            }
+        }
         eventInput.setAdapter(new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, eventLabels));
         eventInput.setOnClickListener(v -> eventInput.showDropDown());
-        int[] selectedEventPosition = {0};
-        eventInput.setOnItemClickListener((parent, selectedView, position, id) -> selectedEventPosition[0] = position);
-        eventInput.setText(eventLabels.get(0), false);
-        rateInput.setText(exchangeRate(initialCurrency).toPlainString());
+        String[] selectedEventId = {eventIds.get(initialEventPosition)};
+        eventInput.setOnItemClickListener((parent, selectedView, position, id) ->
+                selectedEventId[0] = eventIds.get(position));
+        eventInput.setText(eventLabels.get(initialEventPosition), false);
+
+        List<String> categoryLabels = new ArrayList<>();
+        List<String> categoryIds = new ArrayList<>();
+        categoryLabels.add(getString(R.string.uncategorized));
+        categoryIds.add(null);
+        int initialCategoryPosition = 0;
+        for (BudgetCategory category : categories) {
+            categoryLabels.add(category.getName());
+            categoryIds.add(category.getId());
+            if (editing && category.getId().equals(editingExpense.getCategoryId())) {
+                initialCategoryPosition = categoryLabels.size() - 1;
+            }
+        }
+        if (editing && editingExpense.getCategoryId() != null && initialCategoryPosition == 0) {
+            categoryLabels.add(editingExpense.getCategoryId());
+            categoryIds.add(editingExpense.getCategoryId());
+            initialCategoryPosition = categoryLabels.size() - 1;
+        }
+        String[] selectedCategoryId = {categoryIds.get(initialCategoryPosition)};
+        categoryInput.setAdapter(new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_dropdown_item_1line, categoryLabels));
+        categoryInput.setText(categoryLabels.get(initialCategoryPosition), false);
+        categoryInput.setOnClickListener(v -> categoryInput.showDropDown());
+        categoryInput.setOnItemClickListener((parent, selectedView, position, id) ->
+                selectedCategoryId[0] = categoryIds.get(position));
+
+        rateInput.setText((editing ? editingExpense.getExchangeRate()
+                : exchangeRate(initialCurrency)).toPlainString());
+        if (editing) {
+            amount.setText(editingExpense.getAmount().stripTrailingZeros().toPlainString());
+            eurInput.setText(editingExpense.getAmountInEur().stripTrailingZeros().toPlainString());
+            description.setText(editingExpense.getDescription());
+        }
         boolean[] syncingEur = {false};
         boolean[] eurManuallyEdited = {false};
         TextWatcher calculationWatcher = new TextWatcher() {
@@ -433,7 +526,7 @@ public class CashboxFragment extends Fragment {
             catch (Exception ignored) { }
         });
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext()).setView(form).create();
-        View saveButton = form.findViewById(R.id.buttonSaveCashboxEntry);
+        MaterialButton saveButton = form.findViewById(R.id.buttonSaveCashboxEntry);
         saveButton.setOnClickListener(v -> {
             try {
                 String entryDescription = text(description);
@@ -450,6 +543,7 @@ public class CashboxFragment extends Fragment {
                 if (eur.signum() <= 0) throw new NumberFormatException();
                 if (selectedType[0] == TransactionType.INCOME) {
                     saveButton.setEnabled(false);
+                    saveButton.setText(R.string.cashbox_saving);
                     BigDecimal newReceivedAmount = cashbox.getReceivedAmount().add(eur);
                     cashboxRepository.saveReceivedAmount(newReceivedAmount, new CashboxRepository.Callback<Void>() {
                         @Override public void onSuccess(Void ignored) {
@@ -462,39 +556,105 @@ public class CashboxFragment extends Fragment {
                             @Override public void onError(@NonNull Exception error) {
                                 if (!isAdded() || getView() != root) return;
                                 saveButton.setEnabled(true);
+                                saveButton.setText(R.string.save);
                                 showSaveError(error, R.string.received_amount_save_failed);
                         }
                     });
                     return;
                 }
-                int eventPosition = selectedEventPosition[0];
-                Event selectedEvent = eventPosition > 0 ? assignedEvents.get(eventPosition - 1) : null;
-                if (eventPosition < 0) throw new IllegalArgumentException();
-                CashboxTransaction saved = new CashboxTransaction(null, cashbox.getId(), entryDescription, entryDescription, originalAmount,
-                        selectedCurrency, rate, eur, selectedDate[0], selectedType[0], selectedEvent == null ? ExpensePurpose.GENERAL : ExpensePurpose.EVENT,
-                        selectedEvent == null ? null : selectedEvent.getId(), null);
+                String eventId = selectedEventId[0];
+                CashboxTransaction saved = new CashboxTransaction(
+                        editing ? editingExpense.getId() : null,
+                        cashbox.getId(), entryDescription, entryDescription, originalAmount,
+                        selectedCurrency, rate, eur, selectedDate[0], selectedType[0],
+                        eventId == null ? ExpensePurpose.GENERAL : ExpensePurpose.EVENT,
+                        eventId, editing ? editingExpense.getReceiptId() : null);
+                saved.setCategoryId(editing ? selectedCategoryId[0] : null);
                 saveButton.setEnabled(false);
-                cashboxRepository.createExpense(saved, new CashboxRepository.Callback<Void>() {
+                saveButton.setText(R.string.cashbox_saving);
+                CashboxRepository.Callback<Void> saveCallback = new CashboxRepository.Callback<Void>() {
                     @Override public void onSuccess(Void ignored) {
                         if (!isAdded() || getView() != root) return;
                         dialog.dismiss();
-                        Toast.makeText(requireContext(), R.string.cashbox_expense_saved, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), editing
+                                ? R.string.cashbox_entry_updated : R.string.cashbox_expense_saved,
+                                Toast.LENGTH_SHORT).show();
                         refreshCashbox();
                     }
 
                     @Override public void onError(@NonNull Exception error) {
                         if (!isAdded() || getView() != root) return;
                         saveButton.setEnabled(true);
+                        saveButton.setText(R.string.save);
                         showSaveError(error, R.string.cashbox_expense_save_failed);
                     }
-                });
+                };
+                if (editing) {
+                    cashboxRepository.updateExpense(editingExpense.getEventId(), saved, saveCallback);
+                } else {
+                    cashboxRepository.createExpense(saved, saveCallback);
+                }
             } catch (Exception exception) { Toast.makeText(requireContext(), R.string.invalid_cashbox_entry, Toast.LENGTH_SHORT).show(); }
         });
         dialog.show();
     }
 
     private void confirmDelete(CashboxTransaction transaction) {
-        showReadOnlyMessage();
+        if (transaction.getTransactionType() != TransactionType.EXPENSE) return;
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete)
+                .setMessage(R.string.delete_transaction_question)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.delete, null)
+                .create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
+                    android.widget.Button deleteButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                    deleteButton.setEnabled(false);
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(false);
+                    deleteButton.setText(R.string.cashbox_deleting);
+                    cashboxRepository.deleteExpense(transaction, new CashboxRepository.Callback<Void>() {
+                        @Override public void onSuccess(Void ignored) {
+                            deleteReceiptFromStorage(transaction.getReceiptId());
+                            if (!isAdded() || getView() != root) return;
+                            dialog.dismiss();
+                            Toast.makeText(requireContext(), R.string.cashbox_entry_deleted,
+                                    Toast.LENGTH_SHORT).show();
+                            refreshCashbox();
+                        }
+
+                        @Override public void onError(@NonNull Exception error) {
+                            if (!isAdded() || getView() != root) return;
+                            deleteButton.setEnabled(true);
+                            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(true);
+                            deleteButton.setText(R.string.delete);
+                            showSaveError(error, R.string.cashbox_expense_delete_failed);
+                        }
+                    });
+                }));
+        dialog.show();
+    }
+
+    private void deleteReceiptFromStorage(@Nullable String receiptUrl) {
+        if (receiptUrl == null || receiptUrl.trim().isEmpty()) return;
+        String normalized = receiptUrl.trim().toLowerCase(Locale.ROOT);
+        if (!normalized.startsWith("gs://")
+                && !normalized.contains("firebasestorage.googleapis.com")
+                && !normalized.contains("storage.googleapis.com")) {
+            return;
+        }
+        try {
+            FirebaseStorage.getInstance().getReferenceFromUrl(receiptUrl).delete()
+                    .addOnFailureListener(error -> {
+                        Log.w(TAG, "Cashbox expense deleted, but receipt cleanup failed", error);
+                        if (isAdded() && getView() == root) {
+                            Toast.makeText(requireContext(), R.string.receipt_delete_failed,
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+        } catch (IllegalArgumentException error) {
+            Log.w(TAG, "Invalid Firebase Storage receipt URL", error);
+        }
     }
 
     private void styleTypeButtons(MaterialButton received, MaterialButton spent, boolean income) {
