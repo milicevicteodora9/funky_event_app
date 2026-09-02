@@ -9,6 +9,8 @@ import com.example.funkyeventapp.models.BudgetItem;
 import com.example.funkyeventapp.models.BudgetItemSource;
 import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.models.CashboxTransaction;
+import com.example.funkyeventapp.models.Event;
+import com.example.funkyeventapp.services.BudgetCalculator;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -50,12 +52,33 @@ public final class BudgetRepository {
         public List<BudgetCategory> getCategories() { return categories; }
     }
 
+    public static final class EventFinancials {
+        private final BigDecimal revenue;
+        private final BigDecimal actualCost;
+
+        public EventFinancials(BigDecimal revenue, BigDecimal actualCost) {
+            this.revenue = revenue == null ? BigDecimal.ZERO : revenue;
+            this.actualCost = actualCost == null ? BigDecimal.ZERO : actualCost;
+        }
+
+        public BigDecimal getRevenue() { return revenue; }
+        public BigDecimal getActualCost() { return actualCost; }
+        public BigDecimal getProfit() { return revenue.subtract(actualCost); }
+    }
+
     private static final BudgetRepository INSTANCE = new BudgetRepository();
     private final FirebaseFirestore firestore = FirebaseFirestore.getInstance();
 
     private BudgetRepository() { }
 
     public static BudgetRepository getInstance() { return INSTANCE; }
+
+    private static EventFinancials calculateEventFinancials(@Nullable Budget budget,
+                                                             @Nullable List<BudgetItem> items) {
+        return new EventFinancials(
+                BudgetCalculator.calculateTotal(budget, items, BudgetType.EXTERNAL),
+                BudgetCalculator.calculateTotal(budget, items, BudgetType.ACTUAL));
+    }
 
     public Task<Void> createBudgetCategory(@NonNull BudgetCategory category) {
         DocumentReference document = firestore.collection("budgetCategories").document();
@@ -470,6 +493,49 @@ public final class BudgetRepository {
                     } catch (IllegalArgumentException | IllegalStateException error) {
                         callback.onError(error);
                     }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
+    public void getFinancialsForEvents(@NonNull List<Event> events,
+                                       @NonNull Callback<Map<String, EventFinancials>> callback) {
+        List<String> eventIds = new ArrayList<>();
+        List<Task<EventFinancials>> financialTasks = new ArrayList<>();
+        Set<String> seenIds = new HashSet<>();
+        for (Event event : events) {
+            if (event == null || event.getId() == null || event.getId().trim().isEmpty()
+                    || !seenIds.add(event.getId())) continue;
+            String eventId = event.getId();
+            eventIds.add(eventId);
+            Task<DocumentSnapshot> budgetTask = firestore.collection("budgets")
+                    .document(eventId).get();
+            Task<QuerySnapshot> itemsTask = firestore.collection("budgets")
+                    .document(eventId).collection("items").get();
+            financialTasks.add(Tasks.whenAllSuccess(budgetTask, itemsTask)
+                    .continueWith(task -> {
+                        List<Object> results = task.getResult();
+                        DocumentSnapshot budgetDocument = (DocumentSnapshot) results.get(0);
+                        QuerySnapshot itemDocuments = (QuerySnapshot) results.get(1);
+                        Budget budget = mapBudget(budgetDocument, eventId);
+                        List<BudgetItem> items = new ArrayList<>();
+                        for (DocumentSnapshot document : itemDocuments.getDocuments()) {
+                            items.add(mapItem(document, eventId));
+                        }
+                        return calculateEventFinancials(budget, items);
+                    }));
+        }
+        if (financialTasks.isEmpty()) {
+            callback.onSuccess(new HashMap<>());
+            return;
+        }
+        Tasks.whenAllSuccess(financialTasks)
+                .addOnSuccessListener(results -> {
+                    Map<String, EventFinancials> financialsByEventId = new HashMap<>();
+                    for (int index = 0; index < eventIds.size(); index++) {
+                        financialsByEventId.put(eventIds.get(index),
+                                (EventFinancials) results.get(index));
+                    }
+                    callback.onSuccess(financialsByEventId);
                 })
                 .addOnFailureListener(callback::onError);
     }

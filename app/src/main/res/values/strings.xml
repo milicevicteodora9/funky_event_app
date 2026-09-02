@@ -159,6 +159,9 @@
     <string name="summary_completed">COMPLETED\n%1$d</string>
     <string name="summary_revenue">REVENUE (PAID)\n%1$s</string>
     <string name="summary_profit">PROFIT\n%1$s</string>
+    <string name="summary_revenue_value">REVENUE\n%1$s €</string>
+    <string name="summary_actual_costs_value">ACTUAL COSTS\n%1$s €</string>
+    <string name="summary_profit_value">PROFIT\n%1$s €</string>
     <string name="not_available">N/A</string>
     <string name="unknown_event">Unknown event</string>
     <string name="no_client_events">Nema događaja za ovog klijenta</string>
@@ -180,7 +183,10 @@
     <string name="clients_total_external">↗  TOTAL EXTERNAL</string>
     <string name="clients_total_actual">↗  TOTAL ACTUAL</string>
     <string name="clients_actual_profit">↗  ACTUAL PROFIT</string>
-    <string name="actual_profit_formula">External − actual · all events</string>
+    <string name="clients_total_external_year">↗  REVENUE · %1$d</string>
+    <string name="clients_actual_profit_year">↗  PROFIT · %1$d</string>
+    <string name="client_financial_line">%1$s · Rev %2$s € · Profit %3$s €</string>
+    <string name="actual_profit_formula">External − actual · events this year</string>
     <string name="my_cashbox">My Cashbox</string>
     <string name="cashbox_owner">%1$s · Balance in %2$s</string>
     <string name="cashbox_not_found">Cashbox nije pronađen</string>
@@ -254,7 +260,7 @@
     <string name="receipt_read_error">Račun nije moguće pročitati</string>
     <string name="receipt_details">Seller: %1$s\nTax ID: %2$s\nReceipt: %3$s\nDate: %4$s\nAmount: %5$s %6$s\nStatus: %7$s</string>
     <string name="document_picker_error">Dokument nije moguće otvoriti</string>
-    <string name="all_event_budgets">All event budgets</string>
+    <string name="all_event_budgets">External budgets · events this year</string>
     <string name="add_short">＋ Add</string>
     <string name="total_debt">Total debt</string>
     <string name="search_team_hint">Search by name, phone, city, email…</string>

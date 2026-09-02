@@ -17,26 +17,36 @@ import com.example.funkyeventapp.adapters.ClientEventAdapter;
 import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
+import com.example.funkyeventapp.repositories.BudgetRepository;
 import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
+import com.example.funkyeventapp.services.ClientFinanceCalculator;
 import com.google.android.material.button.MaterialButton;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ClientDetailsFragment extends Fragment {
     private final ClientRepository clientRepository = ClientRepository.getInstance();
     private final EventRepository eventRepository = EventRepository.getInstance();
+    private final BudgetRepository budgetRepository = BudgetRepository.getInstance();
+    private final DecimalFormat moneyFormat = new DecimalFormat(
+            "#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private final List<Event> events = new ArrayList<>();
     private RecyclerView history;
     private TextView empty;
     private MaterialButton eventsTab;
+    private String clientId;
+    private boolean skipNextResumeRefresh;
 
     public ClientDetailsFragment() { super(R.layout.fragment_client_details); }
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
-        String clientId = getArguments() == null ? null : getArguments().getString("clientId");
+        clientId = getArguments() == null ? null : getArguments().getString("clientId");
         if (clientId == null) {
             showClientNotFound(view);
             return;
@@ -48,15 +58,24 @@ public class ClientDetailsFragment extends Fragment {
         eventsTab = view.findViewById(R.id.buttonClientEvents);
         view.findViewById(R.id.buttonClientInvoices).setVisibility(View.GONE);
         view.findViewById(R.id.buttonAddInvoice).setVisibility(View.GONE);
-        view.findViewById(R.id.textRevenue).setVisibility(View.GONE);
-        view.findViewById(R.id.textProfit).setVisibility(View.GONE);
         view.findViewById(R.id.buttonBackClient).setOnClickListener(v ->
                 Navigation.findNavController(v).popBackStack());
         eventsTab.setOnClickListener(v -> showEvents(view));
         setEventsTabSelected();
+        bindFinancialSummary(view, ClientFinanceCalculator.zero());
 
         loadClient(view, clientId);
         loadClientEvents(view, clientId);
+        skipNextResumeRefresh = true;
+    }
+
+    @Override public void onResume() {
+        super.onResume();
+        if (skipNextResumeRefresh) {
+            skipNextResumeRefresh = false;
+        } else if (clientId != null && getView() != null) {
+            loadClientEvents(getView(), clientId);
+        }
     }
 
     private void loadClient(@NonNull View root, @NonNull String clientId) {
@@ -89,6 +108,7 @@ public class ClientDetailsFragment extends Fragment {
                 }
                 bindSummary(root);
                 showEvents(root);
+                loadClientFinancials(root, clientId);
             }
 
             @Override public void onError(@NonNull Exception error) {
@@ -97,6 +117,25 @@ public class ClientDetailsFragment extends Fragment {
                         Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void loadClientFinancials(@NonNull View root, @NonNull String clientId) {
+        budgetRepository.getFinancialsForEvents(events,
+                new BudgetRepository.Callback<java.util.Map<String, BudgetRepository.EventFinancials>>() {
+                    @Override public void onSuccess(
+                            java.util.Map<String, BudgetRepository.EventFinancials> financials) {
+                        if (!isAdded() || getView() != root) return;
+                        bindFinancialSummary(root,
+                                ClientFinanceCalculator.forClient(clientId, events, financials));
+                    }
+
+                    @Override public void onError(@NonNull Exception error) {
+                        if (!isAdded() || getView() != root) return;
+                        bindFinancialSummary(root, ClientFinanceCalculator.zero());
+                        Toast.makeText(requireContext(), R.string.budget_load_error,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void bindClient(@NonNull View view, @NonNull Client client) {
@@ -121,6 +160,17 @@ public class ClientDetailsFragment extends Fragment {
                 getString(R.string.summary_current, current));
         ((TextView) view.findViewById(R.id.textCompletedEvents)).setText(
                 getString(R.string.summary_completed, completed));
+    }
+
+    private void bindFinancialSummary(@NonNull View view,
+                                      @NonNull ClientFinanceCalculator.Totals totals) {
+        ((TextView) view.findViewById(R.id.textRevenue)).setText(
+                getString(R.string.summary_revenue_value, moneyFormat.format(totals.getRevenue())));
+        ((TextView) view.findViewById(R.id.textActualCosts)).setText(
+                getString(R.string.summary_actual_costs_value,
+                        moneyFormat.format(totals.getActualCost())));
+        ((TextView) view.findViewById(R.id.textProfit)).setText(
+                getString(R.string.summary_profit_value, moneyFormat.format(totals.getProfit())));
     }
 
     private void showEvents(@NonNull View root) {

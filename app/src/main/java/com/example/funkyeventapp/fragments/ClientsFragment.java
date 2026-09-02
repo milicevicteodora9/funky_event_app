@@ -18,33 +18,33 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.adapters.ClientAdapter;
-import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
+import com.example.funkyeventapp.repositories.BudgetRepository;
 import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
-import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.services.ClientFinanceCalculator;
 import com.example.funkyeventapp.ui.AuthenticatedHeader;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ClientsFragment extends Fragment {
     private final ClientRepository clientRepository = ClientRepository.getInstance();
     private final EventRepository eventRepository = EventRepository.getInstance();
-    private final MockDataRepository mockRepository = MockDataRepository.getInstance();
+    private final BudgetRepository budgetRepository = BudgetRepository.getInstance();
     private final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private TextView invoicedLabel, invoicedValue, actualLabel, actualValue;
     private TextView clientsTitle;
     private ClientAdapter adapter;
+    private boolean skipNextResumeRefresh;
 
     public ClientsFragment() { super(R.layout.fragment_clients); }
 
@@ -66,11 +66,11 @@ public class ClientsFragment extends Fragment {
         invoicedValue = view.findViewById(R.id.textInvoicedValue);
         actualLabel = view.findViewById(R.id.textActualLabel);
         actualValue = view.findViewById(R.id.textActualValue);
-        bindFinancialOverview();
+        bindFinancialOverview(ClientFinanceCalculator.zero(), LocalDate.now().getYear());
 
         clientsTitle.setText(getString(R.string.clients_count, 0));
-        loadClients(view, adapter, clientsTitle);
-        loadEventCounts(view);
+        loadOverview(view);
+        skipNextResumeRefresh = true;
         view.findViewById(R.id.buttonAddClient).setOnClickListener(v ->
                 showClientDialog(view, null));
         view.findViewById(R.id.buttonEvents).setOnClickListener(this::returnToEvents);
@@ -86,15 +86,20 @@ public class ClientsFragment extends Fragment {
 
     @Override public void onResume() {
         super.onResume();
-        if (invoicedValue != null) bindFinancialOverview();
+        if (skipNextResumeRefresh) {
+            skipNextResumeRefresh = false;
+        } else if (invoicedValue != null && getView() != null) {
+            loadOverview(getView());
+        }
     }
 
-    private void loadClients(View root, ClientAdapter adapter, TextView clientsTitle) {
+    private void loadOverview(View root) {
         clientRepository.getAllClients(new ClientRepository.Callback<List<Client>>() {
             @Override public void onSuccess(List<Client> clients) {
                 if (!isAdded() || getView() != root) return;
                 adapter.submitList(clients);
                 clientsTitle.setText(getString(R.string.clients_count, clients.size()));
+                loadFinancialOverview(root);
             }
 
             @Override public void onError(@NonNull Exception error) {
@@ -105,16 +110,31 @@ public class ClientsFragment extends Fragment {
         });
     }
 
-    private void loadEventCounts(View root) {
+    private void loadFinancialOverview(View root) {
         eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
             @Override public void onSuccess(List<Event> events) {
                 if (!isAdded() || getView() != root) return;
-                Map<String, Integer> counts = new HashMap<>();
-                for (Event event : events) {
-                    String clientId = event.getClientId();
-                    counts.put(clientId, counts.getOrDefault(clientId, 0) + 1);
-                }
-                adapter.submitEventCounts(counts);
+                budgetRepository.getFinancialsForEvents(events,
+                        new BudgetRepository.Callback<java.util.Map<String, BudgetRepository.EventFinancials>>() {
+                            @Override public void onSuccess(
+                                    java.util.Map<String, BudgetRepository.EventFinancials> financials) {
+                                if (!isAdded() || getView() != root) return;
+                                adapter.submitFinancials(ClientFinanceCalculator.byClient(events, financials));
+                                int year = LocalDate.now().getYear();
+                                bindFinancialOverview(
+                                        ClientFinanceCalculator.forYear(events, financials, year), year);
+                            }
+
+                            @Override public void onError(@NonNull Exception error) {
+                                if (!isAdded() || getView() != root) return;
+                                adapter.submitFinancials(ClientFinanceCalculator.byClient(
+                                        events, Collections.emptyMap()));
+                                bindFinancialOverview(ClientFinanceCalculator.zero(),
+                                        LocalDate.now().getYear());
+                                Toast.makeText(requireContext(), R.string.budget_load_error,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
             }
 
             @Override public void onError(@NonNull Exception error) {
@@ -176,7 +196,7 @@ public class ClientsFragment extends Fragment {
                                 Toast.makeText(requireContext(), existing == null
                                                 ? R.string.client_saved : R.string.client_updated,
                                         Toast.LENGTH_SHORT).show();
-                                loadClients(root, adapter, clientsTitle);
+                                loadOverview(root);
                             })
                             .addOnFailureListener(error -> {
                                 if (!isAdded() || getView() != root) return;
@@ -205,7 +225,7 @@ public class ClientsFragment extends Fragment {
                                     if (!isAdded() || getView() != root) return;
                                     Toast.makeText(requireContext(), R.string.client_deleted,
                                             Toast.LENGTH_SHORT).show();
-                                    loadClients(root, adapter, clientsTitle);
+                                    loadOverview(root);
                                 })
                                 .addOnFailureListener(error -> {
                                     if (!isAdded() || getView() != root) return;
@@ -215,13 +235,11 @@ public class ClientsFragment extends Fragment {
                 .show();
     }
 
-    private void bindFinancialOverview() {
-        invoicedLabel.setText(R.string.clients_total_external);
-        actualLabel.setText(R.string.clients_actual_profit);
-        BigDecimal external = mockRepository.getTotalForAllBudgets(BudgetType.EXTERNAL);
-        BigDecimal actual = mockRepository.getTotalForAllBudgets(BudgetType.ACTUAL);
-        invoicedValue.setText(moneyFormat.format(external) + " EUR");
-        actualValue.setText(moneyFormat.format(external.subtract(actual)) + " EUR");
+    private void bindFinancialOverview(ClientFinanceCalculator.Totals totals, int year) {
+        invoicedLabel.setText(getString(R.string.clients_total_external_year, year));
+        actualLabel.setText(getString(R.string.clients_actual_profit_year, year));
+        invoicedValue.setText(moneyFormat.format(totals.getRevenue()) + " EUR");
+        actualValue.setText(moneyFormat.format(totals.getProfit()) + " EUR");
     }
 
     private void returnToEvents(View view) {

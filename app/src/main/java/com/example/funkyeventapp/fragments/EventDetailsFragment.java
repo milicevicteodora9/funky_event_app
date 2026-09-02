@@ -37,6 +37,7 @@ import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.repositories.UserRepository;
 import com.example.funkyeventapp.services.AuthService;
 import com.example.funkyeventapp.services.AuthorizationService;
+import com.example.funkyeventapp.services.BudgetCalculator;
 import com.example.funkyeventapp.services.PdfService;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -345,30 +346,17 @@ public class EventDetailsFragment extends Fragment {
     }
 
     private void renderSummary() {
-        BigDecimal external = adjustedExternal();
-        BigDecimal internal = getBudgetTotal(BudgetType.INTERNAL);
-        BigDecimal actual = getBudgetTotal(BudgetType.ACTUAL);
+        BigDecimal external = BudgetCalculator.calculateTotal(
+                budget, budgetItems, BudgetType.EXTERNAL);
+        BigDecimal internal = BudgetCalculator.calculateTotal(
+                budget, budgetItems, BudgetType.INTERNAL);
+        BigDecimal actual = BudgetCalculator.calculateTotal(
+                budget, budgetItems, BudgetType.ACTUAL);
         externalTotal.setText(getString(R.string.total_external, money(external)));
         internalTotal.setText(getString(R.string.total_internal, money(internal)));
         actualTotal.setText(getString(R.string.total_actual, money(actual)));
         estimatedProfit.setText(getString(R.string.estimated_profit_value, money(external.subtract(internal))));
         actualProfit.setText(getString(R.string.actual_profit_value, money(external.subtract(actual))));
-    }
-
-    private BigDecimal adjustedExternal() {
-        BigDecimal value = getBudgetTotal(BudgetType.EXTERNAL);
-        BigDecimal discount = budget.getDiscountPercentage() == null ? BigDecimal.ZERO : budget.getDiscountPercentage();
-        value = value.multiply(BigDecimal.ONE.subtract(discount.divide(new BigDecimal("100"), 6, RoundingMode.HALF_UP)));
-        if (budget.isIncludeVat()) value = value.multiply(new BigDecimal("1.20"));
-        return value;
-    }
-
-    private BigDecimal getBudgetTotal(BudgetType type) {
-        BigDecimal total = BigDecimal.ZERO;
-        for (BudgetItem item : budgetItems) {
-            if (item.getBudgetType() == type) total = total.add(item.getTotal());
-        }
-        return total;
     }
 
     private void addCategoryHeading(String name) {

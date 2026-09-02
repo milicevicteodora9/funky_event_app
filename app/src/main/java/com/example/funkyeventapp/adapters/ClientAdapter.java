@@ -12,11 +12,15 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.Client;
+import com.example.funkyeventapp.services.ClientFinanceCalculator;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientViewHolder> {
     public interface OnClientClickListener { void onClientClick(Client client); }
@@ -24,7 +28,9 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
     public interface OnClientDeleteListener { void onClientDelete(Client client); }
 
     private final List<Client> clients = new ArrayList<>();
-    private final Map<String, Integer> eventCountsByClientId = new HashMap<>();
+    private final Map<String, ClientFinanceCalculator.Totals> financialsByClientId = new HashMap<>();
+    private final DecimalFormat moneyFormat = new DecimalFormat(
+            "#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
     private final OnClientClickListener listener;
     private final OnClientEditListener editListener;
     private final OnClientDeleteListener deleteListener;
@@ -42,9 +48,9 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
         notifyDataSetChanged();
     }
 
-    public void submitEventCounts(Map<String, Integer> eventCounts) {
-        eventCountsByClientId.clear();
-        eventCountsByClientId.putAll(eventCounts);
+    public void submitFinancials(Map<String, ClientFinanceCalculator.Totals> financials) {
+        financialsByClientId.clear();
+        financialsByClientId.putAll(financials);
         notifyDataSetChanged();
     }
 
@@ -79,9 +85,13 @@ public class ClientAdapter extends RecyclerView.Adapter<ClientAdapter.ClientView
             contact.setText(client.getContactPerson());
             email.setText(client.getEmail());
             phone.setText(client.getPhone());
-            int count = eventCountsByClientId.getOrDefault(client.getId(), 0);
-            eventCount.setText(itemView.getResources().getQuantityString(
-                    R.plurals.client_event_count, count, count));
+            ClientFinanceCalculator.Totals totals = financialsByClientId.getOrDefault(
+                    client.getId(), ClientFinanceCalculator.zero());
+            String eventLabel = itemView.getResources().getQuantityString(
+                    R.plurals.client_event_count, totals.getEventCount(), totals.getEventCount());
+            eventCount.setText(itemView.getResources().getString(R.string.client_financial_line,
+                    eventLabel, moneyFormat.format(totals.getRevenue()),
+                    moneyFormat.format(totals.getProfit())));
             logo.setVisibility(View.GONE);
             initial.setVisibility(View.VISIBLE);
             String clientName = client.getName();
