@@ -78,8 +78,9 @@
     </fragment>
     <fragment android:id="@+id/receiptReviewFragment" android:name="com.example.funkyeventapp.fragments.ReceiptReviewFragment" android:label="@string/receipt_review">
         <argument android:name="source" app:argType="string" />
-        <argument android:name="documentId" app:argType="string" app:nullable="true" android:defaultValue="@null" />
-        <argument android:name="cashboxId" app:argType="string" app:nullable="true" android:defaultValue="@null" />
+        <argument android:name="receiptUri" app:argType="string" />
+        <argument android:name="fileName" app:argType="string" app:nullable="true" android:defaultValue="@null" />
+        <argument android:name="mimeType" app:argType="string" app:nullable="true" android:defaultValue="@null" />
     </fragment>
     <fragment android:id="@+id/userManagementFragment" android:name="com.example.funkyeventapp.fragments.UserManagementFragment" android:label="@string/user_management">
         <action android:id="@+id/action_userManagementFragment_to_eventsFragment" app:destination="@id/eventsFragment" app:popUpTo="@id/eventsFragment" app:popUpToInclusive="true" />

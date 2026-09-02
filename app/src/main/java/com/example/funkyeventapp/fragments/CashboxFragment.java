@@ -84,7 +84,8 @@ public class CashboxFragment extends Fragment {
         }
         cameraLauncher = registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
             if (success && pendingCameraUri != null) {
-                saveSelectedDocumentAndOpenReview(pendingCameraUri, pendingCameraFileName, "image/jpeg", DocumentSource.CAMERA);
+                openReceiptReview(DocumentSource.CAMERA, pendingCameraUri,
+                        pendingCameraFileName, "image/jpeg");
             }
             pendingCameraUri = null;
             pendingCameraFileName = null;
@@ -118,7 +119,7 @@ public class CashboxFragment extends Fragment {
         ((TextView) view.findViewById(R.id.textCashboxOwner)).setText(getString(R.string.cashbox_owner,
                 current.getFullName(), Currency.EUR.name()));
         adapter = new CashboxTransactionAdapter(new CashboxTransactionAdapter.Listener() {
-            @Override public void onReceipt(CashboxTransaction item) { showReadOnlyMessage(); }
+            @Override public void onReceipt(CashboxTransaction item) { openReceipt(item); }
             @Override public void onEdit(CashboxTransaction item) { showReadOnlyMessage(); }
             @Override public void onDelete(CashboxTransaction item) { showReadOnlyMessage(); }
         });
@@ -131,17 +132,22 @@ public class CashboxFragment extends Fragment {
         view.findViewById(R.id.textCashboxSpent).setOnClickListener(v -> setEntryFilter(TransactionType.EXPENSE));
         view.findViewById(R.id.textCashboxBalance).setOnClickListener(v -> setEntryFilter(null));
         view.findViewById(R.id.textCashboxEntriesTitle).setOnClickListener(v -> setEntryFilter(null));
-        view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> showReadOnlyMessage());
-        view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v -> showReadOnlyMessage());
-        view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v -> showReadOnlyMessage());
+        view.findViewById(R.id.buttonCashboxCamera).setOnClickListener(v -> launchCamera());
+        view.findViewById(R.id.buttonCashboxGallery).setOnClickListener(v ->
+                galleryLauncher.launch(new String[]{"image/*"}));
+        view.findViewById(R.id.buttonCashboxPdf).setOnClickListener(v ->
+                pdfLauncher.launch(new String[]{"application/pdf"}));
         refreshCashbox();
     }
 
     @Override public void onResume() { super.onResume(); if (cashbox != null && adapter != null) refreshCashbox(); }
 
-    private void openReceiptReview(DocumentSource source, String documentId) {
-        Bundle args = new Bundle(); args.putString("source", source.name()); args.putString("documentId", documentId);
-        args.putString("cashboxId", cashbox.getId());
+    private void openReceiptReview(DocumentSource source, Uri uri, String fileName, String mimeType) {
+        Bundle args = new Bundle();
+        args.putString("source", source.name());
+        args.putString("receiptUri", uri.toString());
+        args.putString("fileName", fileName);
+        args.putString("mimeType", mimeType);
         Navigation.findNavController(root).navigate(R.id.action_cashboxFragment_to_receiptReviewFragment, args);
     }
 
@@ -166,11 +172,7 @@ public class CashboxFragment extends Fragment {
         String fileName = queryDisplayName(uri);
         String mimeType = source == DocumentSource.PDF ? "application/pdf" : requireContext().getContentResolver().getType(uri);
         if (mimeType == null) mimeType = "image/*";
-        saveSelectedDocumentAndOpenReview(uri, fileName, mimeType, source);
-    }
-
-    private void saveSelectedDocumentAndOpenReview(Uri uri, String fileName, String mimeType, DocumentSource source) {
-        showReadOnlyMessage();
+        openReceiptReview(source, uri, fileName, mimeType);
     }
 
     private String queryDisplayName(Uri uri) {
@@ -186,6 +188,20 @@ public class CashboxFragment extends Fragment {
 
     private void showReceiptDetails(CashboxTransaction transaction) {
         showReadOnlyMessage();
+    }
+
+    private void openReceipt(CashboxTransaction transaction) {
+        if (transaction.getReceiptId() == null || transaction.getReceiptId().trim().isEmpty()) return;
+        try {
+            Uri uri = Uri.parse(transaction.getReceiptId());
+            String mimeType = requireContext().getContentResolver().getType(uri);
+            Intent intent = new Intent(Intent.ACTION_VIEW)
+                    .setDataAndType(uri, mimeType == null ? "*/*" : mimeType)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        } catch (Exception error) {
+            Toast.makeText(requireContext(), R.string.receipt_read_error, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void refreshCashbox() {
