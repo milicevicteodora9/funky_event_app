@@ -42,7 +42,10 @@ import com.example.funkyeventapp.repositories.CashboxRepository;
 import com.example.funkyeventapp.repositories.BudgetRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.models.User;
+import com.example.funkyeventapp.models.UserRole;
 import com.example.funkyeventapp.services.AuthService;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.android.material.button.MaterialButton;
@@ -265,7 +268,7 @@ public class CashboxFragment extends Fragment {
     }
 
     private void loadEventNames() {
-        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+        loadAvailableCashboxEvents(new EventRepository.Callback<List<Event>>() {
             @Override public void onSuccess(List<Event> events) {
                 if (!isAdded() || getView() != root) return;
                 adapter.submitEventNames(events);
@@ -352,7 +355,7 @@ public class CashboxFragment extends Fragment {
     }
 
     private void loadEventsAndShowExpenseDialog() {
-        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+        loadAvailableCashboxEvents(new EventRepository.Callback<List<Event>>() {
             @Override public void onSuccess(List<Event> events) {
                 if (!isAdded() || getView() != root) return;
                 showExpenseDialog(events, null, new ArrayList<>());
@@ -367,7 +370,7 @@ public class CashboxFragment extends Fragment {
 
     private void loadEditData(@NonNull CashboxTransaction expense) {
         if (expense.getTransactionType() != TransactionType.EXPENSE) return;
-        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+        loadAvailableCashboxEvents(new EventRepository.Callback<List<Event>>() {
             @Override public void onSuccess(List<Event> events) {
                 if (!isAdded() || getView() != root) return;
                 budgetRepository.getAllBudgetCategories(new BudgetRepository.Callback<List<BudgetCategory>>() {
@@ -389,6 +392,20 @@ public class CashboxFragment extends Fragment {
                 Toast.makeText(requireContext(), R.string.events_load_error, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void loadAvailableCashboxEvents(@NonNull EventRepository.Callback<List<Event>> callback) {
+        User currentUser = AuthService.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getRole() == UserRole.COORDINATOR) {
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser == null) {
+                callback.onError(new IllegalStateException("Authenticated user is required"));
+                return;
+            }
+            eventRepository.getEventsAssignedToUser(firebaseUser.getUid(), callback);
+            return;
+        }
+        eventRepository.getAllEvents(callback);
     }
 
     private void showExpenseDialog(List<Event> assignedEvents,

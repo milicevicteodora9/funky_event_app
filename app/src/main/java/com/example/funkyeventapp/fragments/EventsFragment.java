@@ -20,8 +20,11 @@ import com.example.funkyeventapp.adapters.EventAdapter;
 import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
+import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
+import com.example.funkyeventapp.services.AuthService;
+import com.example.funkyeventapp.services.AuthorizationService;
 import com.example.funkyeventapp.ui.AuthenticatedHeader;
 import com.google.android.material.button.MaterialButton;
 
@@ -49,6 +52,12 @@ public class EventsFragment extends Fragment {
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (!AuthenticatedHeader.bind(this, view)) return;
+        User currentUser = AuthService.getInstance().getCurrentUser();
+        if (!AuthorizationService.canAccessEvents(currentUser)) {
+            Toast.makeText(requireContext(), R.string.module_access_denied, Toast.LENGTH_SHORT).show();
+            Navigation.findNavController(view).popBackStack();
+            return;
+        }
         adapter = new EventAdapter(event -> {
             Bundle arguments = new Bundle();
             arguments.putString("eventId", event.getId());

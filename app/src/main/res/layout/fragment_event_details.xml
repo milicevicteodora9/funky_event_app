@@ -181,6 +181,9 @@
                     app:chipSpacingHorizontal="8dp"
                     app:chipSpacingVertical="6dp"
                     app:singleLine="false" />
+                <TextView android:id="@+id/textNoAssignedUsers" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" android:text="@string/no_assigned_users"
+                    android:textColor="@color/funky_text_secondary" android:textSize="12sp" android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

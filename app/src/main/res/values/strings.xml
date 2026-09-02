@@ -320,6 +320,14 @@
     <string name="admin_required">At least one active Admin is required.</string>
     <string name="access_denied">You do not have access to User Management.</string>
     <string name="users_load_error">Failed to load users.</string>
+    <string name="select_assigned_users">Select assigned users</string>
+    <string name="assigned_users">Assigned Users</string>
+    <string name="assigned_users_count">ASSIGNED USERS (%1$d)</string>
+    <string name="no_assigned_users">No assigned users</string>
+    <string name="unknown_user">Unknown user</string>
+    <string name="assigned_users_load_error">Assigned users could not be loaded.</string>
+    <string name="done">Done</string>
+    <string name="module_access_denied">You do not have access to this module.</string>
     <string name="user_role_update_error">Failed to update user role.</string>
     <string name="user_active_update_error">Failed to update user status.</string>
     <string name="first_name_required">First name *</string>

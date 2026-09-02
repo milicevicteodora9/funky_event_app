@@ -23,8 +23,11 @@ import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.ExpensePurpose;
 import com.example.funkyeventapp.models.Receipt;
 import com.example.funkyeventapp.models.TransactionType;
+import com.example.funkyeventapp.models.User;
+import com.example.funkyeventapp.models.UserRole;
 import com.example.funkyeventapp.repositories.CashboxRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
+import com.example.funkyeventapp.services.AuthService;
 import com.example.funkyeventapp.services.ReceiptScanProcessor;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -136,7 +139,7 @@ public class ReceiptReviewFragment extends Fragment {
     }
 
     private void loadEvents() {
-        eventRepository.getAllEvents(new EventRepository.Callback<List<Event>>() {
+        loadAvailableCashboxEvents(new EventRepository.Callback<List<Event>>() {
             @Override public void onSuccess(List<Event> loadedEvents) {
                 if (!isAdded() || getView() != root) return;
                 events.clear();
@@ -162,6 +165,20 @@ public class ReceiptReviewFragment extends Fragment {
                 Toast.makeText(requireContext(), R.string.events_load_error, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void loadAvailableCashboxEvents(@NonNull EventRepository.Callback<List<Event>> callback) {
+        User currentUser = AuthService.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getRole() == UserRole.COORDINATOR) {
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser == null) {
+                callback.onError(new IllegalStateException("Authenticated user is required"));
+                return;
+            }
+            eventRepository.getEventsAssignedToUser(firebaseUser.getUid(), callback);
+            return;
+        }
+        eventRepository.getAllEvents(callback);
     }
 
     private void runOcr() {

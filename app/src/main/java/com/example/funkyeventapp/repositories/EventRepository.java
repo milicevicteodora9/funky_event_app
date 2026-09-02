@@ -67,11 +67,23 @@ public final class EventRepository {
         data.put("paymentTerms", event.getPaymentTerms());
         data.put("notes", event.getNotes());
         data.put("completed", event.isCompleted());
+        data.put("assignedUserIds", event.getAssignedUserIds());
         return data;
     }
 
     public void getAllEvents(@NonNull Callback<List<Event>> callback) {
-        firestore.collection("events").get()
+        loadEvents(firestore.collection("events").get(), callback);
+    }
+
+    public void getEventsAssignedToUser(@NonNull String userId,
+                                        @NonNull Callback<List<Event>> callback) {
+        loadEvents(firestore.collection("events")
+                .whereArrayContains("assignedUserIds", userId).get(), callback);
+    }
+
+    private void loadEvents(@NonNull Task<com.google.firebase.firestore.QuerySnapshot> task,
+                            @NonNull Callback<List<Event>> callback) {
+        task
                 .addOnSuccessListener(snapshot -> {
                     try {
                         List<Event> events = new ArrayList<>();
@@ -119,12 +131,31 @@ public final class EventRepository {
                 ? completedField
                 : status == EventStatus.COMPLETED;
 
-        return new Event(document.getId(), requiredString(document, "name"), type,
+        Event event = new Event(document.getId(), requiredString(document, "name"), type,
                 requiredDate(document, "startDate"), optionalDate(document, "endDate"),
                 requiredString(document, "location"), status,
                 requiredString(document, "clientId"), optionalString(document, "billingEntity"),
                 optionalString(document, "poNumber"), optionalString(document, "paymentTerms"),
                 optionalString(document, "notes"), completed);
+        event.setAssignedUserIds(optionalStringList(document, "assignedUserIds"));
+        return event;
+    }
+
+    private List<String> optionalStringList(DocumentSnapshot document, String field) {
+        Object value = document.get(field);
+        List<String> result = new ArrayList<>();
+        if (value == null) return result;
+        if (!(value instanceof List<?>)) {
+            throw new IllegalStateException("Invalid " + field + " field");
+        }
+        for (Object item : (List<?>) value) {
+            if (!(item instanceof String)) {
+                throw new IllegalStateException("Invalid " + field + " entry");
+            }
+            String id = ((String) item).trim();
+            if (!id.isEmpty() && !result.contains(id)) result.add(id);
+        }
+        return result;
     }
 
     private LocalDate requiredDate(DocumentSnapshot document, String field) {

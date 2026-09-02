@@ -16,25 +16,38 @@ import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.EventType;
+import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
+import com.example.funkyeventapp.repositories.UserRepository;
+import com.example.funkyeventapp.services.AuthService;
+import com.example.funkyeventapp.services.AuthorizationService;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class AddEventFragment extends Fragment {
     private final EventRepository eventRepository = EventRepository.getInstance();
     private final ClientRepository clientRepository = ClientRepository.getInstance();
+    private final UserRepository userRepository = UserRepository.getInstance();
     private final DateTimeFormatter displayDate = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public AddEventFragment() { super(R.layout.fragment_add_event); }
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
+        if (!AuthorizationService.canAccessEvents(AuthService.getInstance().getCurrentUser())) {
+            Toast.makeText(requireContext(), R.string.module_access_denied, Toast.LENGTH_SHORT).show();
+            Navigation.findNavController(view).popBackStack();
+            return;
+        }
         TextInputEditText name = view.findViewById(R.id.inputNewEventName);
         TextInputEditText startInput = view.findViewById(R.id.inputNewEventStartDate);
         TextInputEditText endInput = view.findViewById(R.id.inputNewEventEndDate);
@@ -47,6 +60,8 @@ public class AddEventFragment extends Fragment {
         MaterialButton eventButton = view.findViewById(R.id.buttonNewEventTypeEvent);
         MaterialButton campaignButton = view.findViewById(R.id.buttonNewEventTypeCampaign);
         MaterialButton saveButton = view.findViewById(R.id.buttonSaveNewEvent);
+        MaterialButton assignedUsersButton = view.findViewById(R.id.buttonSelectAssignedUsers);
+        TextView assignedUsersSummary = view.findViewById(R.id.textAssignedUsersSummary);
         TextView formTitle = view.findViewById(R.id.textEventFormTitle);
         String eventId = getArguments() == null ? null : getArguments().getString("eventId");
         boolean editMode = eventId != null;
@@ -58,6 +73,15 @@ public class AddEventFragment extends Fragment {
         String[] selectedClientId = {null};
         boolean[] clientsLoaded = {false};
         boolean[] eventLoaded = {!editMode};
+        boolean[] usersLoaded = {false};
+        List<User> allUsers = new ArrayList<>();
+        List<User> activeUsers = new ArrayList<>();
+        Set<String> assignedUserIds = new LinkedHashSet<>();
+        Runnable updateReadyState = () -> {
+            boolean eventAndUsersReady = eventLoaded[0] && usersLoaded[0];
+            assignedUsersButton.setEnabled(eventAndUsersReady);
+            saveButton.setEnabled(eventLoaded[0] && clientsLoaded[0]);
+        };
         startInput.setText(start[0].format(displayDate));
         endInput.setText(end[0].format(displayDate));
         startInput.setOnClickListener(v -> pickDate(start[0], date -> {
@@ -87,6 +111,9 @@ public class AddEventFragment extends Fragment {
         styleTypes(eventButton, campaignButton, true);
         view.findViewById(R.id.buttonAddEventBack).setOnClickListener(v -> Navigation.findNavController(v).popBackStack());
         saveButton.setEnabled(false);
+        assignedUsersButton.setEnabled(false);
+        assignedUsersButton.setOnClickListener(v -> showAssignedUsersDialog(
+                activeUsers, allUsers, assignedUserIds, assignedUsersSummary));
 
         clientRepository.getAllClients(new ClientRepository.Callback<List<Client>>() {
             @Override public void onSuccess(List<Client> loadedClients) {
@@ -101,12 +128,31 @@ public class AddEventFragment extends Fragment {
                     selectedClientId[0] = existingEvent[0].getClientId();
                     selectClient(clientInput, clients, existingEvent[0].getClientId());
                 }
-                saveButton.setEnabled(eventLoaded[0]);
+                updateReadyState.run();
             }
 
             @Override public void onError(@NonNull Exception error) {
                 if (!isAdded() || getView() != view) return;
                 Toast.makeText(requireContext(), R.string.clients_load_error,
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        userRepository.getAllUsers(new UserRepository.Callback<List<User>>() {
+            @Override public void onSuccess(List<User> loadedUsers) {
+                if (!isAdded() || getView() != view) return;
+                allUsers.clear();
+                allUsers.addAll(loadedUsers);
+                activeUsers.clear();
+                for (User user : loadedUsers) if (user.isActive()) activeUsers.add(user);
+                usersLoaded[0] = true;
+                updateAssignedUsersSummary(allUsers, assignedUserIds, assignedUsersSummary);
+                updateReadyState.run();
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != view) return;
+                Toast.makeText(requireContext(), R.string.users_load_error,
                         Toast.LENGTH_SHORT).show();
             }
         });
@@ -124,6 +170,9 @@ public class AddEventFragment extends Fragment {
                     }
                     existingEvent[0] = loadedEvent;
                     eventLoaded[0] = true;
+                    assignedUserIds.clear();
+                    assignedUserIds.addAll(loadedEvent.getAssignedUserIds());
+                    updateAssignedUsersSummary(allUsers, assignedUserIds, assignedUsersSummary);
                     selectedClientId[0] = loadedEvent.getClientId();
                     selectedType[0] = loadedEvent.getType();
                     start[0] = loadedEvent.getStartDate();
@@ -142,7 +191,7 @@ public class AddEventFragment extends Fragment {
                     notes.setText(loadedEvent.getNotes());
                     styleTypes(eventButton, campaignButton,
                             selectedType[0] == EventType.EVENT);
-                    saveButton.setEnabled(clientsLoaded[0]);
+                    updateReadyState.run();
                 }
 
                 @Override public void onError(@NonNull Exception error) {
@@ -166,6 +215,7 @@ public class AddEventFragment extends Fragment {
             Event event = new Event(eventId, text(name), selectedType[0], start[0], end[0],
                     text(location), status, selectedClientId[0], text(billing), text(po),
                     text(terms), text(notes), completed);
+            event.setAssignedUserIds(new ArrayList<>(assignedUserIds));
             saveButton.setEnabled(false);
             Task<Void> saveTask = editMode
                     ? eventRepository.updateEvent(event)
@@ -186,6 +236,52 @@ public class AddEventFragment extends Fragment {
                                 Toast.LENGTH_SHORT).show();
                     });
         });
+    }
+
+    private void showAssignedUsersDialog(List<User> activeUsers, List<User> allUsers,
+                                         Set<String> assignedUserIds, TextView summary) {
+        Set<String> draftAssignments = new LinkedHashSet<>(assignedUserIds);
+        String[] labels = new String[activeUsers.size()];
+        boolean[] checked = new boolean[activeUsers.size()];
+        for (int index = 0; index < activeUsers.size(); index++) {
+            User user = activeUsers.get(index);
+            labels[index] = user.getFullName() + " — " + user.getRole().name();
+            checked[index] = draftAssignments.contains(user.getId());
+        }
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.assigned_users)
+                .setMultiChoiceItems(labels, checked, (dialog, which, selected) -> {
+                    String userId = activeUsers.get(which).getId();
+                    if (selected) draftAssignments.add(userId);
+                    else draftAssignments.remove(userId);
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.done, (dialog, which) -> {
+                    assignedUserIds.clear();
+                    assignedUserIds.addAll(draftAssignments);
+                    updateAssignedUsersSummary(allUsers, assignedUserIds, summary);
+                })
+                .show();
+    }
+
+    private void updateAssignedUsersSummary(List<User> users, Set<String> assignedUserIds,
+                                            TextView summary) {
+        if (assignedUserIds.isEmpty()) {
+            summary.setText(R.string.no_assigned_users);
+            return;
+        }
+        List<String> names = new ArrayList<>();
+        for (String userId : assignedUserIds) {
+            String label = getString(R.string.unknown_user);
+            for (User user : users) {
+                if (userId.equals(user.getId())) {
+                    label = user.getFullName();
+                    break;
+                }
+            }
+            names.add(label);
+        }
+        summary.setText(android.text.TextUtils.join(", ", names));
     }
 
     private void pickDate(LocalDate initial, DateConsumer consumer) {

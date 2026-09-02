@@ -29,13 +29,14 @@ import com.example.funkyeventapp.models.BudgetItemSource;
 import com.example.funkyeventapp.models.BudgetType;
 import com.example.funkyeventapp.models.Client;
 import com.example.funkyeventapp.models.Event;
-import com.example.funkyeventapp.models.EventAssignment;
 import com.example.funkyeventapp.models.EventStatus;
 import com.example.funkyeventapp.models.User;
 import com.example.funkyeventapp.repositories.BudgetRepository;
 import com.example.funkyeventapp.repositories.ClientRepository;
 import com.example.funkyeventapp.repositories.EventRepository;
-import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.repositories.UserRepository;
+import com.example.funkyeventapp.services.AuthService;
+import com.example.funkyeventapp.services.AuthorizationService;
 import com.example.funkyeventapp.services.PdfService;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -56,7 +57,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class EventDetailsFragment extends Fragment {
-    private final MockDataRepository repository = MockDataRepository.getInstance();
+    private final UserRepository userRepository = UserRepository.getInstance();
     private final BudgetRepository budgetRepository = BudgetRepository.getInstance();
     private final ClientRepository clientRepository = ClientRepository.getInstance();
     private final EventRepository eventRepository = EventRepository.getInstance();
@@ -81,6 +82,11 @@ public class EventDetailsFragment extends Fragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle state) {
         super.onViewCreated(view, state);
+        if (!AuthorizationService.canAccessEvents(AuthService.getInstance().getCurrentUser())) {
+            Toast.makeText(requireContext(), R.string.module_access_denied, Toast.LENGTH_SHORT).show();
+            Navigation.findNavController(view).popBackStack();
+            return;
+        }
         String eventId = getArguments() == null ? null : getArguments().getString("eventId");
         if (eventId == null) {
             showEventNotFound(view);
@@ -111,7 +117,7 @@ public class EventDetailsFragment extends Fragment {
         bindViews(view);
         bindEvent(view);
         bindActions(view);
-        renderTeam();
+        renderAssignedUsers(view);
         renderBudget();
         loadBudget(view);
     }
@@ -213,7 +219,7 @@ public class EventDetailsFragment extends Fragment {
         view.findViewById(R.id.buttonCompleteEvent).setOnClickListener(v -> toggleCompleted());
         view.findViewById(R.id.buttonDeleteEvent).setOnClickListener(v -> confirmDeleteEvent(view));
         view.findViewById(R.id.buttonPdfQuote).setOnClickListener(v -> generateAndShareQuote());
-        view.findViewById(R.id.buttonAddTeamUser).setOnClickListener(v -> showAddTeamDialog());
+        view.findViewById(R.id.buttonAddTeamUser).setVisibility(View.GONE);
         externalTab.setOnClickListener(v -> selectBudget(BudgetType.EXTERNAL));
         internalTab.setOnClickListener(v -> selectBudget(BudgetType.INTERNAL));
         actualTab.setOnClickListener(v -> selectBudget(BudgetType.ACTUAL));
@@ -243,47 +249,46 @@ public class EventDetailsFragment extends Fragment {
                 .show();
     }
 
-    private void showAddTeamDialog() {
-        List<User> available = repository.getAvailableUsersForEvent(event.getId());
-        if (available.isEmpty()) { showToast(R.string.no_available_users); return; }
-        String[] labels = new String[available.size()];
-        for (int i = 0; i < available.size(); i++) labels[i] = available.get(i).getFullName() + " — " + available.get(i).getRole().name();
-        final int[] selected = {-1};
-        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.add_team_member)
-                .setSingleChoiceItems(labels, -1, (d, which) -> selected[0] = which)
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.add, null).create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            if (selected[0] < 0) { showToast(R.string.select_user_first); return; }
-            repository.addEventAssignment(event.getId(), available.get(selected[0]).getId(), "Team member", false);
-            dialog.dismiss();
-            renderTeam();
-        }));
-        dialog.show();
-    }
-
-    private void renderTeam() {
+    private void renderAssignedUsers(@NonNull View view) {
         teamGroup.removeAllViews();
-        List<EventAssignment> assignments = repository.getAssignmentsForEvent(event.getId());
-        teamTitle.setText(getString(R.string.team_count, assignments.size()));
-        for (EventAssignment assignment : assignments) {
-            User user = repository.getUserById(assignment.getUserId());
-            if (user == null) continue;
-            Chip chip = new Chip(requireContext());
-            chip.setEnsureMinTouchTargetSize(false);
-            chip.setMinHeight(dp(27));
-            chip.setText(user.getFullName() + (assignment.isOwner() ? "  (owner)" : ""));
-            chip.setTextSize(11.5f);
-            chip.setChipStartPadding(dp(4));
-            chip.setChipEndPadding(dp(2));
-            chip.setChipBackgroundColor(ColorStateList.valueOf(requireContext().getColor(R.color.funky_badge)));
-            chip.setTextColor(requireContext().getColor(assignment.isOwner() ? R.color.funky_completed_text : R.color.funky_text));
-            chip.setCloseIconVisible(!assignment.isOwner());
-            chip.setOnCloseIconClickListener(v -> { repository.removeAssignment(assignment.getId()); renderTeam(); });
-            teamGroup.addView(chip);
+        List<String> assignedIds = event.getAssignedUserIds();
+        teamTitle.setText(getString(R.string.assigned_users_count, assignedIds.size()));
+        TextView emptyState = view.findViewById(R.id.textNoAssignedUsers);
+        emptyState.setVisibility(assignedIds.isEmpty() ? View.VISIBLE : View.GONE);
+        if (assignedIds.isEmpty()) return;
+        userRepository.getAllUsers(new UserRepository.Callback<List<User>>() {
+            @Override public void onSuccess(List<User> users) {
+                if (!isAdded() || getView() != view) return;
+                for (String userId : assignedIds) {
+                    User assigned = null;
+                    for (User user : users) {
+                        if (userId.equals(user.getId())) {
+                            assigned = user;
+                            break;
+                        }
+                    }
+                    Chip chip = new Chip(requireContext());
+                    chip.setEnsureMinTouchTargetSize(false);
+                    chip.setMinHeight(dp(27));
+                    chip.setText(assigned == null
+                            ? getString(R.string.unknown_user) : assigned.getFullName());
+                    chip.setTextSize(11.5f);
+                    chip.setChipStartPadding(dp(4));
+                    chip.setChipEndPadding(dp(4));
+                    chip.setChipBackgroundColor(ColorStateList.valueOf(
+                            requireContext().getColor(R.color.funky_badge)));
+                    chip.setTextColor(requireContext().getColor(R.color.funky_text));
+                    teamGroup.addView(chip);
+                }
+            }
+
+            @Override public void onError(@NonNull Exception error) {
+                if (!isAdded() || getView() != view) return;
+                emptyState.setVisibility(View.VISIBLE);
+                emptyState.setText(R.string.assigned_users_load_error);
+            }
+        });
         }
-    }
 
     private void selectBudget(BudgetType type) { selectedBudgetType = type; renderBudget(); }
 

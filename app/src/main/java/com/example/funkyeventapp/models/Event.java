@@ -1,6 +1,8 @@
 package com.example.funkyeventapp.models;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Event {
     private String id;
@@ -16,6 +18,7 @@ public class Event {
     private String paymentTerms;
     private String notes;
     private boolean completed;
+    private List<String> assignedUserIds = new ArrayList<>();
 
     public Event() { }
 
@@ -63,4 +66,15 @@ public class Event {
     public void setNotes(String notes) { this.notes = notes; }
     public boolean isCompleted() { return completed; }
     public void setCompleted(boolean completed) { this.completed = completed; }
+    public List<String> getAssignedUserIds() {
+        if (assignedUserIds == null) assignedUserIds = new ArrayList<>();
+        return new ArrayList<>(assignedUserIds);
+    }
+    public void setAssignedUserIds(List<String> assignedUserIds) {
+        this.assignedUserIds = assignedUserIds == null
+                ? new ArrayList<>() : new ArrayList<>(assignedUserIds);
+    }
+    public boolean isAssignedToUser(String userId) {
+        return userId != null && getAssignedUserIds().contains(userId);
+    }
 }
