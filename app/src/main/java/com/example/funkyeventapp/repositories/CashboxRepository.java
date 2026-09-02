@@ -57,6 +57,14 @@ public final class CashboxRepository {
 
     public static CashboxRepository getInstance() { return INSTANCE; }
 
+    /** Reserves a Firestore-compatible ID so related data can use it before the expense is saved. */
+    public String newExpenseId() {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) throw new IllegalStateException("Authenticated user is required");
+        return firestore.collection("cashboxes").document(user.getUid())
+                .collection("transactions").document().getId();
+    }
+
     public void getCashboxForCurrentUser(@NonNull Callback<CashboxData> callback) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
@@ -127,8 +135,11 @@ public final class CashboxRepository {
         String userId = user.getUid();
         com.google.firebase.firestore.DocumentReference cashboxDocument =
                 firestore.collection("cashboxes").document(userId);
+        String requestedId = expense.getId();
         com.google.firebase.firestore.DocumentReference transactionDocument =
-                cashboxDocument.collection("transactions").document();
+                requestedId == null || requestedId.trim().isEmpty()
+                        ? cashboxDocument.collection("transactions").document()
+                        : cashboxDocument.collection("transactions").document(requestedId);
         expense.setId(transactionDocument.getId());
         expense.setCashboxId(userId);
         Map<String, Object> data = expenseData(expense);

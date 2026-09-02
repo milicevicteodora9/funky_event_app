@@ -28,7 +28,11 @@ import com.example.funkyeventapp.repositories.EventRepository;
 import com.example.funkyeventapp.services.ReceiptScanProcessor;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.FirebaseStorage;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -46,6 +50,7 @@ public class ReceiptReviewFragment extends Fragment {
 
     private DocumentSource source;
     private Uri receiptUri;
+    private String originalFileName;
     private View root;
     private TextInputEditText sellerInput;
     private TextInputEditText taxIdInput;
@@ -83,9 +88,15 @@ public class ReceiptReviewFragment extends Fragment {
 
     private void bindSource() {
         ((TextView) root.findViewById(R.id.textReceiptSource)).setText(source.name());
-        String fileName = requireArguments().getString("fileName");
+        originalFileName = requireArguments().getString("fileName");
+        if (originalFileName == null || originalFileName.trim().isEmpty()) {
+            originalFileName = receiptUri.getLastPathSegment();
+        }
+        if (originalFileName == null || originalFileName.trim().isEmpty()) {
+            originalFileName = source == DocumentSource.PDF ? "receipt.pdf" : "receipt.jpg";
+        }
         ((TextView) root.findViewById(R.id.textReceiptFile)).setText(
-                fileName == null ? receiptUri.getLastPathSegment() : fileName);
+                originalFileName);
         ImageView preview = root.findViewById(R.id.imageReceiptPreview);
         if (source == DocumentSource.PDF) {
             preview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
@@ -232,14 +243,55 @@ public class ReceiptReviewFragment extends Fragment {
             Event selectedEvent = selectedEventPosition > 0 && selectedEventPosition <= events.size()
                     ? events.get(selectedEventPosition - 1) : null;
             BigDecimal rate = exchangeRate(currency);
-            CashboxTransaction transaction = new CashboxTransaction(null, null, description,
+            String transactionId = cashboxRepository.newExpenseId();
+            CashboxTransaction transaction = new CashboxTransaction(transactionId, null, description,
                     description, amount, currency, rate, amount.divide(rate, 2, RoundingMode.HALF_UP),
                     selectedDate, TransactionType.EXPENSE,
                     selectedEvent == null ? ExpensePurpose.GENERAL : ExpensePurpose.EVENT,
-                    selectedEvent == null ? null : selectedEvent.getId(), receiptUri.toString());
+                    selectedEvent == null ? null : selectedEvent.getId(), null);
             saving = true;
             updateSaveEnabled();
-            cashboxRepository.createExpense(transaction, new CashboxRepository.Callback<Void>() {
+            uploadAndSave(transaction);
+        } catch (Exception error) {
+            Toast.makeText(requireContext(), R.string.invalid_receipt, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void uploadAndSave(@NonNull CashboxTransaction transaction) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (receiptUri == null || receiptUri.toString().trim().isEmpty()) {
+            createExpense(transaction, null);
+            return;
+        }
+        if (user == null) {
+            finishSaveWithError(R.string.receipt_upload_failed);
+            return;
+        }
+
+        String safeFileName = originalFileName.replace('/', '_').replace('\\', '_');
+        StorageReference uploadedFile = FirebaseStorage.getInstance().getReference()
+                .child("receipts")
+                .child(user.getUid())
+                .child(transaction.getId())
+                .child(safeFileName);
+        uploadedFile.putFile(receiptUri)
+                .continueWithTask(upload -> {
+                    if (!upload.isSuccessful()) {
+                        Exception error = upload.getException();
+                        throw error == null ? new IllegalStateException("Receipt upload failed") : error;
+                    }
+                    return uploadedFile.getDownloadUrl();
+                })
+                .addOnSuccessListener(downloadUri -> {
+                    transaction.setReceiptId(downloadUri.toString());
+                    createExpense(transaction, uploadedFile);
+                })
+                .addOnFailureListener(error -> finishSaveWithError(R.string.receipt_upload_failed));
+    }
+
+    private void createExpense(@NonNull CashboxTransaction transaction,
+                               @Nullable StorageReference uploadedFile) {
+        cashboxRepository.createExpense(transaction, new CashboxRepository.Callback<Void>() {
                 @Override public void onSuccess(Void ignored) {
                     if (!isAdded() || getView() != root) return;
                     Toast.makeText(requireContext(), R.string.receipt_saved, Toast.LENGTH_SHORT).show();
@@ -247,23 +299,39 @@ public class ReceiptReviewFragment extends Fragment {
                 }
 
                 @Override public void onError(@NonNull Exception error) {
-                    if (!isAdded() || getView() != root) return;
-                    saving = false;
-                    updateSaveEnabled();
-                    boolean permissionDenied = error instanceof FirebaseFirestoreException
-                            && ((FirebaseFirestoreException) error).getCode() == FirebaseFirestoreException.Code.PERMISSION_DENIED;
-                    Toast.makeText(requireContext(), permissionDenied
-                            ? R.string.cashbox_rules_blocked : R.string.cashbox_expense_save_failed,
-                            Toast.LENGTH_LONG).show();
+                    if (uploadedFile == null) {
+                        showTransactionSaveError(error);
+                    } else {
+                        uploadedFile.delete().addOnCompleteListener(cleanup ->
+                                showTransactionSaveError(error));
+                    }
                 }
             });
-        } catch (Exception error) {
-            Toast.makeText(requireContext(), R.string.invalid_receipt, Toast.LENGTH_SHORT).show();
-        }
+    }
+
+    private void showTransactionSaveError(@NonNull Exception error) {
+        if (!isAdded() || getView() != root) return;
+        saving = false;
+        updateSaveEnabled();
+        boolean permissionDenied = error instanceof FirebaseFirestoreException
+                && ((FirebaseFirestoreException) error).getCode() == FirebaseFirestoreException.Code.PERMISSION_DENIED;
+        Toast.makeText(requireContext(), permissionDenied
+                ? R.string.cashbox_rules_blocked : R.string.cashbox_expense_save_failed,
+                Toast.LENGTH_LONG).show();
+    }
+
+    private void finishSaveWithError(int message) {
+        if (!isAdded() || getView() != root) return;
+        saving = false;
+        updateSaveEnabled();
+        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
     }
 
     private void updateSaveEnabled() {
-        if (saveButton != null) saveButton.setEnabled(!processing && !saving);
+        if (saveButton != null) {
+            saveButton.setEnabled(!processing && !saving);
+            saveButton.setText(saving ? R.string.receipt_saving : R.string.save_receipt);
+        }
     }
 
     private BigDecimal exchangeRate(Currency currency) {
