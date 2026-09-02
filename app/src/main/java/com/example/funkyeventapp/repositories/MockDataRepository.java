@@ -23,9 +23,6 @@ import com.example.funkyeventapp.models.DocumentSource;
 import com.example.funkyeventapp.models.Receipt;
 import com.example.funkyeventapp.models.ReceiptProcessingStatus;
 import com.example.funkyeventapp.models.ScannedDocument;
-import com.example.funkyeventapp.models.TeamMember;
-import com.example.funkyeventapp.models.TeamFee;
-import com.example.funkyeventapp.models.TeamPayment;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,9 +45,6 @@ public class MockDataRepository {
     private final List<CashboxTransaction> cashboxTransactions = new ArrayList<>();
     private final List<ScannedDocument> scannedDocuments = new ArrayList<>();
     private final List<Receipt> receipts = new ArrayList<>();
-    private final List<TeamMember> teamMembers = new ArrayList<>();
-    private final List<TeamFee> teamFees = new ArrayList<>();
-    private final List<TeamPayment> teamPayments = new ArrayList<>();
     private long mockIdCounter = 1000;
 
     private MockDataRepository() {
@@ -61,7 +55,6 @@ public class MockDataRepository {
         seedBudgets();
         seedInvoices();
         seedCashbox();
-        seedTeam();
     }
 
     public static MockDataRepository getInstance() { return INSTANCE; }
@@ -188,50 +181,6 @@ public class MockDataRepository {
         budgets.add(new Budget("budget_" + event.getId(), event.getId(), false, BigDecimal.ZERO));
         return event;
     }
-
-    private void seedTeam() {
-        teamMembers.add(member("tm_1", "Aleksandar Lazić", "+381 63 223960", "aleksandar@email.rs", "Beograd", "265-000000648353-89"));
-        teamMembers.add(member("tm_2", "Aleksandra Facepaint", "+381 64 112233", "facepaint@email.rs", "Beograd", ""));
-        teamMembers.add(member("tm_3", "Ana Marija", "+381 66 428834", "ana.marija@email.rs", "Beograd", ""));
-        teamMembers.add(member("tm_4", "Anastasija Otić", "+381 63 1530120", "anastasija@email.rs", "Novi Sad", ""));
-        teamMembers.add(member("tm_5", "Anđela Bojanić", "", "andjela@email.rs", "Bačko Dobro Polje", ""));
-        teamMembers.add(member("tm_6", "Anja Atanasković", "+381 60 5588806", "", "Beograd", ""));
-        teamMembers.add(member("tm_7", "Bojan Marković", "+381 64 230011", "bojan@email.rs", "Niš", ""));
-        teamMembers.add(member("tm_8", "Jelena Petrović", "+381 65 882211", "jelena@email.rs", "Kragujevac", ""));
-        teamMembers.add(member("tm_9", "Luka Nikolić", "", "luka@email.rs", "Novi Sad", ""));
-        teamMembers.add(member("tm_10", "Marija Ilić", "+381 63 981122", "", "Beograd", ""));
-        teamMembers.add(member("tm_11", "Miloš Stanković", "+381 64 776655", "milos@email.rs", "Pančevo", ""));
-        teamMembers.add(member("tm_12", "Sara Jovanović", "+381 62 445566", "sara@email.rs", "Beograd", ""));
-        teamFees.add(fee("tf_1", "tm_1", "1", "Moderator oba dana", "1600"));
-        teamFees.add(fee("tf_2", "tm_1", "3", "BEO Shopping Center aktivacija", "800"));
-        teamFees.add(fee("tf_3", "tm_1", "4", "Glumac i kviz", "800"));
-        teamPayments.add(payment("tp_1", "tm_1", "800")); teamPayments.add(payment("tp_2", "tm_1", "400")); teamPayments.add(payment("tp_3", "tm_1", "400"));
-        teamFees.add(fee("tf_4", "tm_5", "3", "Hostesa", "520")); teamPayments.add(payment("tp_4", "tm_5", "400"));
-        teamFees.add(fee("tf_5", "tm_3", "2", "Promoter", "300")); teamPayments.add(payment("tp_5", "tm_3", "300"));
-        teamFees.add(fee("tf_6", "tm_7", "5", "Tehničar", "450")); teamPayments.add(payment("tp_6", "tm_7", "500"));
-        teamFees.add(fee("tf_7", "tm_8", "1", "Animator", "250"));
-    }
-
-    private TeamMember member(String id,String name,String phone,String email,String city,String account){return new TeamMember(id,name,phone,email,city,account,"",true);}
-    private TeamFee fee(String id,String memberId,String eventId,String description,String amount){return new TeamFee(id,memberId,eventId,description,new BigDecimal(amount),Currency.EUR,LocalDate.of(2026,8,20),"");}
-    private TeamPayment payment(String id,String memberId,String amount){return new TeamPayment(id,memberId,new BigDecimal(amount),Currency.EUR,LocalDate.of(2026,8,20),"Bank transfer","");}
-
-    public List<TeamMember> getTeamMembers(){return new ArrayList<>(teamMembers);}
-    public TeamMember getTeamMemberById(String id){for(TeamMember member:teamMembers)if(member.getId().equals(id))return member;return null;}
-    public TeamMember addTeamMember(TeamMember member){if(member.getId()==null||member.getId().trim().isEmpty())member.setId(nextId("team_member"));teamMembers.add(member);return member;}
-    public boolean updateTeamMember(TeamMember updated){for(int i=0;i<teamMembers.size();i++)if(teamMembers.get(i).getId().equals(updated.getId())){teamMembers.set(i,updated);return true;}return false;}
-    public List<TeamFee> getFeesForTeamMember(String id){List<TeamFee> result=new ArrayList<>();for(TeamFee fee:teamFees)if(fee.getTeamMemberId().equals(id))result.add(fee);return result;}
-    public List<TeamPayment> getPaymentsForTeamMember(String id){List<TeamPayment> result=new ArrayList<>();for(TeamPayment payment:teamPayments)if(payment.getTeamMemberId().equals(id))result.add(payment);return result;}
-    public TeamFee addTeamFee(TeamFee fee){if(fee.getId()==null||fee.getId().trim().isEmpty())fee.setId(nextId("team_fee"));teamFees.add(fee);return fee;}
-    public boolean updateTeamFee(TeamFee updated){for(int i=0;i<teamFees.size();i++)if(teamFees.get(i).getId().equals(updated.getId())){teamFees.set(i,updated);return true;}return false;}
-    public boolean deleteTeamFee(String id){for(int i=0;i<teamFees.size();i++)if(teamFees.get(i).getId().equals(id)){teamFees.remove(i);return true;}return false;}
-    public TeamPayment addTeamPayment(TeamPayment payment){if(payment.getId()==null||payment.getId().trim().isEmpty())payment.setId(nextId("team_payment"));teamPayments.add(payment);return payment;}
-    public boolean updateTeamPayment(TeamPayment updated){for(int i=0;i<teamPayments.size();i++)if(teamPayments.get(i).getId().equals(updated.getId())){teamPayments.set(i,updated);return true;}return false;}
-    public boolean deleteTeamPayment(String id){for(int i=0;i<teamPayments.size();i++)if(teamPayments.get(i).getId().equals(id)){teamPayments.remove(i);return true;}return false;}
-    public BigDecimal getTotalFeesForMember(String id){BigDecimal total=BigDecimal.ZERO;for(TeamFee fee:getFeesForTeamMember(id))total=total.add(fee.getAmount());return total;}
-    public BigDecimal getTotalPaidForMember(String id){BigDecimal total=BigDecimal.ZERO;for(TeamPayment payment:getPaymentsForTeamMember(id))total=total.add(payment.getAmount());return total;}
-    public BigDecimal getDebtForMember(String id){return getTotalFeesForMember(id).subtract(getTotalPaidForMember(id));}
-    public BigDecimal getTotalTeamDebt(){BigDecimal total=BigDecimal.ZERO;for(TeamMember member:teamMembers){BigDecimal debt=getDebtForMember(member.getId());if(debt.signum()>0)total=total.add(debt);}return total;}
 
     public Cashbox getCashboxForUser(String userId) {
         for (Cashbox cashbox : cashboxes) if (userId != null && userId.equals(cashbox.getUserId())) return cashbox;

@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.TeamMember;
-import com.example.funkyeventapp.repositories.MockDataRepository;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -19,23 +18,26 @@ import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.HashMap;
 
 public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.TeamMemberViewHolder> {
     public interface Listener { void onOpen(TeamMember member); void onEdit(TeamMember member); }
 
     private final List<TeamMember> members = new ArrayList<>();
-    private final MockDataRepository repository;
+    private final Map<String, BigDecimal> debtByMember = new HashMap<>();
     private final Listener listener;
     private final DecimalFormat money = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.GERMANY));
 
-    public TeamMemberAdapter(MockDataRepository repository, Listener listener) {
-        this.repository = repository;
+    public TeamMemberAdapter(Listener listener) {
         this.listener = listener;
     }
 
-    public void submitList(List<TeamMember> updated) {
+    public void submitList(List<TeamMember> updated, Map<String, BigDecimal> updatedDebt) {
         members.clear();
         members.addAll(updated);
+        debtByMember.clear();
+        debtByMember.putAll(updatedDebt);
         notifyDataSetChanged();
     }
 
@@ -68,7 +70,8 @@ public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.Te
             }
             contact.setText(details);
             contact.setVisibility(details.length() == 0 ? View.GONE : View.VISIBLE);
-            BigDecimal memberDebt = repository.getDebtForMember(member.getId());
+            BigDecimal memberDebt = debtByMember.containsKey(member.getId())
+                    ? debtByMember.get(member.getId()) : BigDecimal.ZERO;
             debt.setVisibility(memberDebt.signum() > 0 ? View.VISIBLE : View.GONE);
             debt.setText(money.format(memberDebt) + " €");
             itemView.setAlpha(member.isActive() ? 1f : .55f);

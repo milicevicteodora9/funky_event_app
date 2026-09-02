@@ -5,12 +5,13 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.example.funkyeventapp.R;
 import com.example.funkyeventapp.models.TeamMember;
-import com.example.funkyeventapp.repositories.MockDataRepository;
+import com.example.funkyeventapp.repositories.TeamRepository;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -19,7 +20,7 @@ public final class TeamMemberDialog {
 
     private TeamMemberDialog() { }
 
-    public static void show(Fragment fragment, MockDataRepository repository,
+    public static void show(Fragment fragment, TeamRepository repository,
                             @Nullable TeamMember existing, OnSavedListener listener) {
         View content = LayoutInflater.from(fragment.requireContext()).inflate(R.layout.dialog_team_member, null);
         TextInputEditText fullName = content.findViewById(R.id.inputTeamFullName);
@@ -45,10 +46,28 @@ public final class TeamMemberDialog {
             if (name.isEmpty()) { fullName.setError(fragment.getString(R.string.full_name_required)); return; }
             TeamMember member = new TeamMember(existing == null ? null : existing.getId(), name, value(phone), value(email),
                     value(city), value(account), value(notes), active.isChecked());
-            if (existing == null) repository.addTeamMember(member); else repository.updateTeamMember(member);
-            dialog.dismiss();
-            listener.onSaved(member);
-            Toast.makeText(fragment.requireContext(), existing == null ? R.string.team_member_saved : R.string.team_member_updated, Toast.LENGTH_SHORT).show();
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText(R.string.cashbox_saving);
+            TeamRepository.Callback<TeamMember> callback = new TeamRepository.Callback<TeamMember>() {
+                @Override public void onSuccess(TeamMember saved) {
+                    if (!fragment.isAdded()) return;
+                    dialog.dismiss();
+                    listener.onSaved(saved);
+                    Toast.makeText(fragment.requireContext(), existing == null
+                            ? R.string.team_member_saved : R.string.team_member_updated,
+                            Toast.LENGTH_SHORT).show();
+                }
+
+                @Override public void onError(@NonNull Exception error) {
+                    if (!fragment.isAdded()) return;
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText(R.string.save);
+                    Toast.makeText(fragment.requireContext(), R.string.team_member_save_error,
+                            Toast.LENGTH_LONG).show();
+                }
+            };
+            if (existing == null) repository.addTeamMember(member, callback);
+            else repository.updateTeamMember(member, callback);
         }));
         dialog.show();
     }

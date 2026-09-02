@@ -270,6 +270,15 @@
     <string name="full_name_required">Full name is required</string>
     <string name="team_member_saved">Team member added</string>
     <string name="team_member_updated">Team member updated</string>
+    <string name="team_load_error">Team podatke nije moguće učitati.</string>
+    <string name="team_member_load_error">Podatke člana nije moguće učitati.</string>
+    <string name="team_member_save_error">Team member nije moguće sačuvati.</string>
+    <string name="team_fee_save_error">Honorar nije moguće sačuvati.</string>
+    <string name="team_fee_delete_error">Honorar nije moguće obrisati.</string>
+    <string name="team_payment_save_error">Isplatu nije moguće sačuvati.</string>
+    <string name="team_payment_delete_error">Isplatu nije moguće obrisati.</string>
+    <string name="event_optional">Event (optional)</string>
+    <string name="no_event">Bez eventa</string>
     <string name="team_member_details">Team member details</string>
     <string name="team_member_not_found">Team member nije pronađen</string>
     <string name="contact">CONTACT</string>
